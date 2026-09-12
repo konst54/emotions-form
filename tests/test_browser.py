@@ -379,9 +379,9 @@ class FormTests(unittest.TestCase):
         """Narrow screens: the whole feelings block fits one screen above the fixed bar and a tap only selects;
         wide screens: three buttons per cell and no horizontal scroll."""
         MAIN_BLOCK = """()=>{const cells=[...document.querySelectorAll('#table-grid .cell, #table-grid .cell-empty')].filter(c=>parseInt(c.style.gridRow)<=23);
-            const top=document.querySelector('#table-grid .hcell').getBoundingClientRect().top;
+            const top=document.querySelector('#table-view .section-heading').getBoundingClientRect().top;
             return Math.round(Math.max(...cells.map(c=>c.getBoundingClientRect().bottom))-top);}"""
-        for width, height in [(360, 780), (390, 844), (844, 390), (1024, 768), (1440, 1000)]:
+        for width, height in [(360, 700), (390, 664), (844, 390), (1024, 768), (1440, 1000)]:
             self.page.set_viewport_size({'width': width, 'height': height})
             self.page.reload()
             self.page.locator('#view-table').click()
@@ -392,9 +392,8 @@ class FormTests(unittest.TestCase):
             self.assertEqual(self.page.locator('#table-bar').is_visible(), compact, (width, height))
             self.assertEqual(self.page.locator('.cell[data-id="main-1-0"] .cell-minus').is_visible(), not compact, (width, height))
             if compact:
-                if width < 400:  # phone portrait: header + 22 rows within a Safari-sized viewport minus the bar
-                    self.assertLessEqual(self.page.evaluate(MAIN_BLOCK), 620, (width, height))
-                    self.assertLess(self.page.locator('#table-grid .hcell').first.bounding_box()['y'], 40)
+                if width < 400:  # phone portrait: the zoom controls and the header row land on the first screen
+                    self.assertLess(self.page.locator('#table-grid .hcell').first.bounding_box()['y'], 60)
                 self.page.locator('.cell[data-id="main-1-6"] .cell-pick').click()
                 self.assertEqual(self.page.locator('.cell[data-id="main-1-6"]').get_attribute('data-state'), 'unanswered')
                 self.assertEqual(self.page.locator('#bar-word').inner_text(), 'Ошарашенность')
@@ -411,6 +410,29 @@ class FormTests(unittest.TestCase):
                     self.assertGreaterEqual(min(box['width'], box['height']), 44, (width, selector))
                 self.assertEqual(self.page.locator('#table-grid .hcell').nth(1).locator('.tally').all_text_contents(),
                                  ['1 вспоминаю', '0 пока нет', '20 без ответа'])
+                # note dot on the cell itself, and a clearly different fill for + and -
+                self.assertEqual(self.page.locator('.cell[data-id="main-1-6"]').get_attribute('data-has-note'), 'true')
+                plus_bg = self.page.locator('.cell[data-id="main-1-6"]').evaluate('el=>getComputedStyle(el).backgroundColor')
+                self.page.locator('.cell[data-id="main-1-7"] .cell-pick').click(); self.page.locator('#bar-minus').click()
+                minus_bg = self.page.locator('.cell[data-id="main-1-7"]').evaluate('el=>getComputedStyle(el).backgroundColor')
+                self.assertNotEqual(plus_bg, minus_bg)
+                # zoom: the smallest step puts the entire table on one screen above the bar; the choice is remembered
+                WHOLE = """()=>{const top=document.querySelector('#table-view .section-heading').getBoundingClientRect().top;
+                    const bottom=Math.max(...[...document.querySelectorAll('#table-grid > *')].map(c=>c.getBoundingClientRect().bottom));
+                    return Math.round(bottom-top);}"""
+                budget = self.page.evaluate("innerHeight - document.getElementById('table-bar').getBoundingClientRect().height")
+                if width < 400:
+                    self.assertLessEqual(self.page.evaluate(MAIN_BLOCK), budget, (width, height, 'default zoom: feelings block'))
+                while not self.page.locator('#zoom-out').is_disabled():
+                    self.page.locator('#zoom-out').click()
+                if width < 400:
+                    self.assertLessEqual(self.page.evaluate(WHOLE), budget, (width, height, 'smallest zoom: whole table'))
+                self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'))
+                small = self.page.evaluate("getComputedStyle(document.querySelector('.cell-pick')).fontSize")
+                self.page.reload(); self.page.locator('#view-table').click()
+                self.assertEqual(self.page.evaluate("getComputedStyle(document.querySelector('.cell-pick')).fontSize"), small)
+                self.page.locator('#zoom-in').click(); self.page.locator('#zoom-in').click()
+                self.assertGreater(float(self.page.evaluate("parseFloat(getComputedStyle(document.querySelector('.cell-pick')).fontSize)")), float(small[:-2]))
             else:
                 box = self.page.locator('.cell[data-id="main-1-0"] .cell-minus').bounding_box()
                 self.assertGreaterEqual(min(box['width'], box['height']), 40, (width, height))
