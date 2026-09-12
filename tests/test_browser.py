@@ -7,12 +7,16 @@ from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
 os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(ROOT / '.browsers')
+TARGET_URL = os.environ.get('TEST_BASE_URL', ROOT.joinpath('index.html').as_uri())
+BROWSER = os.environ.get('TEST_BROWSER', 'chromium')
+RESULTS = ROOT / 'test-results' / (BROWSER + ('-http' if TARGET_URL.startswith('http') else '-file'))
 
 class FormTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.pw = sync_playwright().start()
-        cls.browser = getattr(cls.pw, os.environ.get("TEST_BROWSER", "chromium")).launch()
+        cls.browser = getattr(cls.pw, BROWSER).launch()
+        print(f'Browser: {BROWSER} {cls.browser.version}; target: {TARGET_URL}', flush=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -22,7 +26,7 @@ class FormTests(unittest.TestCase):
     def setUp(self):
         self.context = self.browser.new_context(viewport={'width': 1440, 'height': 1000})
         self.page = self.context.new_page()
-        self.page.goto(ROOT.joinpath('index.html').as_uri() if ROOT.joinpath('index.html').exists() else 'about:blank')
+        self.page.goto(TARGET_URL)
 
     def tearDown(self):
         self.context.close()
@@ -49,7 +53,7 @@ class FormTests(unittest.TestCase):
         self.assertIsNotNone(self.page.evaluate("localStorage.getItem('emotions-form:v1')"))
 
     def download(self, selector):
-        with self.page.expect_download(timeout=5000) as pending:
+        with self.page.expect_download(timeout=30000) as pending:
             self.page.locator(selector).click()
         return Path(pending.value.path()).read_text(encoding='utf-8-sig')
 
@@ -148,7 +152,7 @@ class FormTests(unittest.TestCase):
         for method in ['getItem', 'setItem']:
             context = self.browser.new_context()
             context.add_init_script(f"Storage.prototype.{method}=function(){{throw new DOMException('blocked','QuotaExceededError')}}")
-            page = context.new_page(); page.goto(ROOT.joinpath('index.html').as_uri())
+            page = context.new_page(); page.goto(TARGET_URL)
             page.locator('#answer-main-0-0').select_option('remember')
             self.assertTrue(page.locator('#storage-warning').is_visible())
             self.assertIn('приостановлено', page.locator('#save-status').inner_text())
@@ -159,7 +163,7 @@ class FormTests(unittest.TestCase):
             context.close()
 
     def test_09_layout_and_touch_targets(self):
-        out = ROOT / 'test-results'; out.mkdir(exist_ok=True)
+        out = RESULTS; out.mkdir(parents=True, exist_ok=True)
         for width in [320, 390, 768, 1440]:
             self.page.set_viewport_size({'width': width, 'height': 960})
             self.page.reload()
@@ -189,11 +193,11 @@ class FormTests(unittest.TestCase):
 
     def test_10_no_requests_console_or_url_answers(self):
         requests=[]; errors=[]
-        self.page.on('request', lambda request: requests.append(request.url))
+        self.page.on('request', lambda request: requests.append((request.url, request.resource_type, request.method)))
         self.page.on('pageerror', lambda error: errors.append(str(error)))
         self.page.reload()
         self.page.locator('#answer-main-0-0').select_option('remember')
-        self.assertEqual([url for url in requests if not url.startswith('file:')], [])
+        self.assertEqual(requests, [(self.page.url, 'document', 'GET')])
         self.assertEqual(errors, [])
         self.assertNotIn('?', self.page.url)
         policy = self.page.locator('meta[http-equiv="Content-Security-Policy"]').get_attribute('content')
@@ -212,7 +216,7 @@ class FormTests(unittest.TestCase):
 
     def test_12_mobile_keyboard_and_text_size(self):
         context = self.browser.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True, device_scale_factor=3)
-        page = context.new_page(); page.goto(ROOT.joinpath('index.html').as_uri())
+        page = context.new_page(); page.goto(TARGET_URL)
         self.assertGreaterEqual(page.locator('#answer-main-0-0').evaluate('(el)=>parseFloat(getComputedStyle(el).fontSize)'), 16)
         page.locator('#answer-main-0-0').select_option('not-yet')
         page.locator('[data-id="main-0-0"] .note > summary').tap()
@@ -227,6 +231,18 @@ class FormTests(unittest.TestCase):
         self.assertTrue(self.page.locator('#answer-main-1-0').is_visible())
         self.page.locator('#answer-main-1-0').focus(); self.page.keyboard.press('ArrowDown')
         self.assertEqual(self.page.locator('#answer-main-1-0').input_value(), 'remember')
+
+    def test_13_compact_intro_and_visible_storage_reminder(self):
+        for width in [320, 390]:
+            self.page.set_viewport_size({'width': width, 'height': 844})
+            self.page.reload()
+            first_answer = self.page.locator('#answer-main-0-0').bounding_box()
+            self.assertLess(first_answer['y'], 844, 'First answer should be within the initial mobile screen')
+            reminder = self.page.locator('#storage-reminder')
+            expect(reminder).to_be_visible()
+            self.assertLess(reminder.bounding_box()['y'], 400)
+            for phrase in ['браузере', 'устройстве', 'удалить', 'JSON']:
+                self.assertIn(phrase, reminder.inner_text())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

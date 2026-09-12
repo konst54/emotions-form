@@ -1,5 +1,6 @@
 .venv/
 .browsers/
+.webkit-deps/
 test-results/
 __pycache__/
 *.pyc
