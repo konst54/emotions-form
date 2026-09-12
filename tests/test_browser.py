@@ -325,5 +325,69 @@ class FormTests(unittest.TestCase):
         expect(self.page.locator('#progress-text')).to_have_text('Отмечено 148 из 148')
         self.assertEqual(len(self.page.locator('#note-main-0-0').input_value()), 2000)
 
+    def test_17_table_view_controls_and_persistence(self):
+        self.page.locator('#view-table').click()
+        self.assertTrue(self.page.locator('#table-view').is_visible())
+        self.assertFalse(self.page.locator('#cards-view').is_visible())
+        self.assertEqual(self.page.locator('.cell').count(), 148)
+        cell = self.page.locator('.cell[data-id="main-0-0"]')
+        # plus / minus toggle, and the same answer shows up in the cards view controls
+        cell.locator('.cell-plus').click()
+        self.assertEqual(cell.get_attribute('data-state'), 'remember')
+        self.assertEqual(cell.locator('.cell-plus').get_attribute('aria-pressed'), 'true')
+        self.assertEqual(self.page.locator('#answer-main-0-0').input_value(), 'remember')
+        cell.locator('.cell-plus').click()
+        self.assertEqual(cell.get_attribute('data-state'), 'unanswered')
+        cell.locator('.cell-minus').click()
+        self.assertEqual(cell.get_attribute('data-state'), 'not-yet')
+        self.assertEqual(cell.locator('.cell-minus').get_attribute('aria-pressed'), 'true')
+        self.assertEqual(cell.locator('.cell-plus').get_attribute('aria-pressed'), 'false')
+        # header tallies follow
+        header = self.page.locator('#table-grid .hcell').first
+        self.assertEqual(header.locator('.tally').all_text_contents(), ['0 вспоминаю', '1 пока нет', '15 без ответа'])
+        # note through the sheet
+        self.assertEqual(cell.locator('.cell-note').get_attribute('data-has-note'), 'false')
+        cell.locator('.cell-note').click()
+        expect(self.page.locator('#note-sheet')).to_be_visible()
+        self.assertEqual(self.page.locator('#sheet-title').inner_text(), 'Бешенство')
+        self.assertEqual(self.page.evaluate('document.activeElement.id'), 'sheet-note')
+        self.page.keyboard.type('Табличная заметка')
+        self.assertEqual(self.page.locator('#note-main-0-0').input_value(), 'Табличная заметка')
+        self.page.keyboard.press('Escape')
+        expect(self.page.locator('#note-sheet')).to_be_hidden()
+        self.assertEqual(self.page.evaluate('document.activeElement.className'), 'cell-btn cell-note')
+        self.assertEqual(cell.locator('.cell-note').get_attribute('data-has-note'), 'true')
+        self.assertIn('есть запись', cell.locator('.cell-note').get_attribute('aria-label'))
+        # everything is in the one stored packet, and the chosen view survives a reload
+        self.page.reload()
+        self.assertTrue(self.page.locator('#table-view').is_visible())
+        self.assertEqual(self.page.locator('#view-table').get_attribute('aria-pressed'), 'true')
+        self.assertEqual(cell.get_attribute('data-state'), 'not-yet')
+        self.assertEqual(cell.locator('.cell-note').get_attribute('data-has-note'), 'true')
+        exported = json.loads(self.download('#export-json'))
+        self.assertEqual(exported['answers']['main-0-0'], {'state': 'not-yet', 'note': 'Табличная заметка'})
+        self.assertNotIn('view', exported)
+        # keyboard: the cell buttons are ordinary buttons
+        cell.locator('.cell-plus').focus(); self.page.keyboard.press('Enter')
+        self.assertEqual(cell.get_attribute('data-state'), 'remember')
+        self.page.locator('#view-cards').click()
+        self.assertTrue(self.page.locator('#cards-view').is_visible())
+        self.page.reload()
+        self.assertTrue(self.page.locator('#cards-view').is_visible())
+
+    def test_18_table_view_fits_landscape_scrolls_portrait(self):
+        for width, height, fits in [(390, 844, False), (844, 390, True), (1024, 768, True), (1440, 1000, True)]:
+            self.page.set_viewport_size({'width': width, 'height': height})
+            self.page.reload()
+            self.page.locator('#view-table').click()
+            self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'), (width, height))
+            scrolls = self.page.evaluate("()=>{const s=document.getElementById('table-scroll');return s.scrollWidth>s.clientWidth+1;}")
+            self.assertEqual(scrolls, not fits, (width, height))
+            self.assertEqual(self.page.locator('#table-hint').is_visible(), not fits, (width, height))
+            box = self.page.locator('.cell[data-id="main-1-0"] .cell-minus').bounding_box()
+            self.assertGreaterEqual(min(box['width'], box['height']), 40, (width, height))
+            self.assertEqual(self.page.locator('#table-grid .hcell').count(), 10)
+            self.assertEqual(self.page.locator('#table-grid .table-sep').count(), 2)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

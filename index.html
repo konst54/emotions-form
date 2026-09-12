@@ -16,24 +16,35 @@
 #storage-reminder{font-size:14px;color:var(--muted);margin:12px 0 0;max-width:680px}.guide>summary{font-weight:650;min-height:44px;display:list-item;align-content:center}.guide{padding:12px 22px}.notification:empty{display:none}
 @media(max-width:899px){.hero{gap:12px;padding:20px 0}.guide{padding:0 16px}}
 @media(max-width:520px){.topline{padding:12px 0}.hero{padding:16px 0;gap:12px}h1{font-size:32px;margin:8px 0}.intro{font-size:14px;margin-bottom:8px}.eyebrow{font-size:10px}#storage-reminder{font-size:13px;margin-top:8px}.guide>summary{font-size:13px}.workbench{padding:12px;margin-bottom:4px}.workbench-top{gap:10px}.progress-copy span{display:none}.actions{gap:6px}.actions .primary{grid-column:auto}progress{margin-top:12px}.save-line{margin-top:8px}.section-heading{margin-bottom:14px}.section-heading p{margin-top:6px}#feelings .section-heading p{display:none}}
+.view-switch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:14px;font-size:13px}.view-label{color:var(--muted);margin-right:4px}.view-switch button{font-size:13px;padding:8px 14px;min-height:40px}.view-switch button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}.view-hint{flex-basis:100%;color:var(--muted);font-size:12px}
+.table-scroll{border:1px solid var(--line);border-radius:14px;overflow-x:auto;background:var(--white);-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}.table-scroll.fits{overflow:visible}.table-grid{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));min-width:0}.tcol[data-column="0"]{--tone:var(--anger);--tint:#f5e7df}.tcol[data-column="1"]{--tone:var(--fear);--tint:#eee9f4}.tcol[data-column="2"]{--tone:var(--sad);--tint:#e5edf5}.tcol[data-column="3"]{--tone:var(--joy);--tint:#f6eed2}.tcol[data-column="4"]{--tone:var(--love);--tint:#e5eee2}.hcell{position:sticky;top:0;z-index:2;scroll-snap-align:start;background:var(--tint);border-top:3px solid var(--tone);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 8px;min-width:0}.hcell-title{display:block;font-size:16px;font-weight:650;letter-spacing:-.02em}.hcell .group-count{margin-top:5px}.hcell-minor{position:static;border-top-width:1px;background:#f0f2ea}.hcell-minor .hcell-title{font-size:13px;color:var(--muted)}.table-sep{grid-column:1/-1;padding:12px 10px;font-weight:650;font-size:14px;background:#eef1e8;border-bottom:1px solid var(--line)}.cell,.cell-empty{border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-left:3px solid var(--tone,transparent);background:var(--white);min-width:0}.cell-empty{background:#fbfbf6}.cell{display:grid;grid-template-columns:auto 1fr auto;gap:6px 4px;padding:8px;align-items:end}.cell-word{grid-column:1/-1;font-size:13px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;align-self:start}.cell-minus{grid-column:1}.cell-right{grid-column:3;display:flex;gap:4px}.cell-btn{position:relative;min-height:0;width:40px;height:40px;padding:0;border-radius:9px;font-size:19px;line-height:1;font-weight:600;display:grid;place-items:center}.cell-note{font-size:16px}.cell[data-state="remember"]{background:#e4eee0}.cell[data-state="not-yet"]{background:#edf0f1}.cell[data-state="not-yet"] .cell-word{color:#4f5f63}.cell-plus[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}.cell-minus[aria-pressed="true"]{background:#57676c;color:#fff;border-color:#57676c}.cell-note[data-has-note="true"]{background:#fff1dc;border-color:#ba8051;color:#7a4a1e}.cell-note[data-has-note="true"]::after{content:"";position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#b5631f}
+.sheet{position:fixed;inset:0;z-index:30;background:rgba(35,59,55,.4);display:grid;align-items:end;justify-items:center}.sheet-panel{width:100%;max-width:600px;background:var(--white);border-radius:18px 18px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.15);max-height:88vh;overflow:auto}.sheet h3{font-size:20px;letter-spacing:-.02em}.sheet-context{font-size:12px;color:var(--muted);margin:2px 0 12px}.sheet textarea{resize:vertical;display:block;width:100%;min-height:150px;border:1px solid #a9bbab;border-radius:8px;background:#fff;padding:9px;font-size:16px;line-height:1.45}.sheet-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+@media(min-width:900px){.sheet{align-items:center;padding:20px}.sheet-panel{border-radius:18px;padding-bottom:18px}}
+@media(min-width:1300px){.cell{grid-template-columns:auto 1fr auto;align-items:center}.cell-word{grid-column:2;grid-row:1;align-self:center;font-size:12.5px;hyphens:auto;-webkit-hyphens:auto}.cell-minus{grid-row:1}.cell-right{grid-row:1}}
+@media(max-width:899px){.table-grid{grid-template-columns:repeat(5,minmax(156px,1fr))}.cell{padding:6px 7px}.cell-btn{width:40px;height:40px}.hcell{padding:9px 7px}.hcell-title{font-size:15px}.cell-word{font-size:12.5px}}
 @media(prefers-reduced-motion:no-preference){button{transition:background .15s}.chevron{transition:transform .15s}}
-@media print{body{background:white;color:black;font-size:10pt}.wrap{padding:0;max-width:none}.hero{display:block;padding:16px 0}.hero h1{font-size:30pt}.guide,.workbench,.notification,.warning,.footer button,.skip{display:none!important}.private{color:black}.group-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.group{break-inside:auto;border-color:#bbb}.group>summary{padding:8px;min-height:0}.group-title{font-size:12pt}.group-content{padding:0 6px}.item{display:block;break-inside:avoid;padding:8px 0}.item-name{font-size:9pt;min-height:0}.item select{appearance:none;border:0;font-size:9pt;padding:0;min-height:0;background:transparent!important}.note>summary{display:none}.note textarea{display:none}.print-note{font-size:8pt;white-space:pre-wrap;overflow-wrap:anywhere}.fears-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.section-heading p,.privacy p{font-size:9pt}.privacy{grid-template-columns:1fr}.chevron{display:none}.section{padding:12px 0}}
+@media print{.sheet,.view-switch{display:none!important}body{background:white;color:black;font-size:10pt}.wrap{padding:0;max-width:none}.hero{display:block;padding:16px 0}.hero h1{font-size:30pt}.guide,.workbench,.notification,.warning,.footer button,.skip{display:none!important}.private{color:black}.group-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.group{break-inside:auto;border-color:#bbb}.group>summary{padding:8px;min-height:0}.group-title{font-size:12pt}.group-content{padding:0 6px}.item{display:block;break-inside:avoid;padding:8px 0}.item-name{font-size:9pt;min-height:0}.item select{appearance:none;border:0;font-size:9pt;padding:0;min-height:0;background:transparent!important}.note>summary{display:none}.note textarea{display:none}.print-note{font-size:8pt;white-space:pre-wrap;overflow-wrap:anywhere}.fears-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.section-heading p,.privacy p{font-size:9pt}.privacy{grid-template-columns:1fr}.chevron{display:none}.section{padding:12px 0}}
 @media screen{.print-note{display:none}}
 </style>
 </head>
 <body>
-<a class="skip" href="#feelings">К заполнению</a>
+<a class="skip" href="#fill">К заполнению</a>
 <div class="wrap">
 <header class="topline"><div class="brand"><span class="brand-mark" aria-hidden="true">✳</span> Карта чувств</div><span class="private">Личное пространство</span></header>
 <main>
 <section class="hero" aria-labelledby="page-title"><div><div class="eyebrow">Практика самонаблюдения</div><h1 id="page-title">Время услышать себя.</h1><p class="intro">Вспомните ситуации, в которых вы переживали эти чувства. Отмечайте слова, добавляйте заметки — в своём темпе.</p><p id="storage-reminder">Ответы — только в этом браузере и на этом устройстве. Браузер может удалить данные: <strong>скачивайте копию JSON для долгого хранения.</strong></p></div><details class="guide"><summary>Как заполнять · нет правильных ответов</summary><ol><li><span><strong>Вспоминаю</strong> — могу вспомнить свой опыт.</span></li><li><span><strong>Пока нет</strong> — сейчас ничего не приходит на ум.</span></li><li><span>Оставьте <strong>без ответа</strong>, если хочется вернуться позже.</span></li></ol><small>Можно пропускать слова, менять ответы и делать перерывы. Это не тест и не диагностика.</small></details></section>
-<section class="workbench" aria-label="Прогресс и сохранение"><div class="workbench-top"><div class="progress-copy"><strong id="progress-text">Отмечено 0 из 148</strong><span>В своём темпе, без необходимости заполнить всё</span></div><div class="actions"><button class="primary" type="button" id="export-json">Скачать копию · JSON</button><button type="button" id="export-txt">Скачать текст · TXT</button><button type="button" id="import-json">Загрузить копию</button><input class="sr-only" tabindex="-1" type="file" id="import-file" accept=".json,application/json" aria-label="Файл резервной копии JSON"></div></div><progress id="progress" value="0" max="148" aria-labelledby="progress-text"></progress><div id="save-status" class="save-line" role="status">Сохранение в этом браузере</div></section>
+<section class="workbench" aria-label="Прогресс и сохранение"><div class="workbench-top"><div class="progress-copy"><strong id="progress-text">Отмечено 0 из 148</strong><span>В своём темпе, без необходимости заполнить всё</span></div><div class="actions"><button class="primary" type="button" id="export-json">Скачать копию · JSON</button><button type="button" id="export-txt">Скачать текст · TXT</button><button type="button" id="import-json">Загрузить копию</button><input class="sr-only" tabindex="-1" type="file" id="import-file" accept=".json,application/json" aria-label="Файл резервной копии JSON"></div></div><progress id="progress" value="0" max="148" aria-labelledby="progress-text"></progress><div class="view-switch" role="group" aria-label="Вид формы"><span class="view-label">Вид</span><button type="button" id="view-cards" aria-pressed="true">Карточки</button><button type="button" id="view-table" aria-pressed="false">Таблица</button><span id="table-hint" class="view-hint" hidden>Таблица шире экрана — прокручивайте её вбок.</span></div><div id="save-status" class="save-line" role="status">Сохранение в этом браузере</div></section>
 <div id="storage-warning" class="warning" role="alert" hidden><p id="storage-message"></p><button id="download-damaged" type="button" hidden>Скачать исходные данные</button><button id="recover-storage" type="button" hidden>Заменить повреждённую копию</button></div>
 <div id="notice" class="notification" role="status" aria-live="polite"></div>
 <noscript><div class="warning">Для заполнения формы нужен JavaScript. Включите его в настройках браузера. Данные не отправляются на сервер.</div></noscript>
+<div id="fill"><div id="cards-view">
 <section class="section" id="feelings" aria-labelledby="feelings-title"><div class="section-heading"><span class="section-number" aria-hidden="true">01</span><div><h2 id="feelings-title">Чувства и эмоции</h2><p>Пять групп из исходной таблицы. В каждой — слова, за которыми может стоять ваш собственный опыт.</p></div></div><div class="group-grid main-groups" id="main-groups"></div></section>
 <section class="section" aria-labelledby="thoughts-title"><div class="section-heading"><span class="section-number" aria-hidden="true">02</span><div><h2 id="thoughts-title">Мысли (или состояния человека), вызванные гаммой чувств</h2><p>Расположение под группами сохранено из исходной таблицы. Это ориентир для чтения, а не научная классификация или однозначная связь с чувством.</p></div></div><div class="group-grid thought-groups" id="thought-groups"></div></section>
 <section class="section" aria-labelledby="fears-title"><div class="section-heading"><span class="section-number" aria-hidden="true">03</span><div><h2 id="fears-title">Страхи</h2><p>Отдельные темы для бережного наблюдения за собой.</p></div></div><div class="fears-grid" id="fears"></div></section>
+</div>
+<div id="table-view" hidden><section class="section" aria-labelledby="table-title"><div class="section-heading"><span class="section-number" aria-hidden="true">01</span><div><h2 id="table-title">Таблица чувств</h2><p>Расположение слов как в исходной таблице. Слева «−» — пока не вспоминаю; справа «+» — вспоминаю, рядом заметка. Повторное нажатие снимает отметку.</p></div></div><div class="table-scroll" id="table-scroll"><div class="table-grid" id="table-grid"></div></div></section></div>
+</div>
+<div id="note-sheet" class="sheet" hidden><div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><h3 id="sheet-title"></h3><p id="sheet-context" class="sheet-context"></p><label class="sr-only" for="sheet-note">Заметка</label><textarea id="sheet-note" rows="5" placeholder="Ситуация, ощущение, воспоминание…" aria-describedby="sheet-help"></textarea><span id="sheet-help" class="note-help"></span><p id="sheet-notice" class="notification" role="status"></p><div class="sheet-actions"><button type="button" class="primary" id="sheet-close">Готово</button></div></div></div>
 <section class="privacy" aria-labelledby="privacy-title"><h2 id="privacy-title">Ваши ответы остаются у вас.</h2><div><p>Автосохранение работает только в этом браузере на этом устройстве, если доступно локальное хранилище. Форма не отправляет ответы на сервер: здесь нет аналитики, внешних шрифтов и сетевых запросов из приложения.</p><p>Браузер может удалить данные — например, при очистке истории или закрытии приватного режима. Для долгого хранения скачивайте копию JSON; её можно загрузить обратно. TXT удобен для чтения, но не для восстановления.</p><p>Возвращайтесь по тому же адресу в том же браузере — Chrome или Safari. Ссылка на форму передаёт только пустую форму, не ваши ответы (в вашем браузере по ней откроется ваша сохранённая копия). Скачанные файлы содержат личные записи: храните их конфиденциально и передавайте только осознанно.</p></div></section>
 </main><footer class="footer"><span>Не нужно чувствовать «как надо». Достаточно замечать.</span><button type="button" class="quiet" id="reset">Очистить мои ответы</button></footer>
 </div>
@@ -50,7 +61,7 @@ let answers = {};
 const $ = id => document.getElementById(id);
 function element(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
 function makeItem(name, id, section, group) {
-  const item = {id,name,section,group}; items.push(item);
+  const item = {id,name,section,group}; items.push(item);  // one entry per word; the table view reads it back through controls
   const row=element('div',undefined,'item'); row.dataset.id=id;
   const label=element('label',name,'item-name'); label.htmlFor='answer-'+id;
   const select=element('select'); select.id='answer-'+id; select.dataset.answer=id; select.setAttribute('aria-label',name+' — '+section+(group?' / '+group:''));
@@ -61,31 +72,60 @@ function makeItem(name, id, section, group) {
   const help=element('span','До 2 000 символов. Только для вас.','note-help');help.id='help-'+id;text.setAttribute('aria-describedby',help.id);
   const printed=element('div','', 'print-note');
   note.append(summary,noteLabel,text,help);row.append(label,select,note,printed);
-  controls.set(id,{row,select,note,text,summary,printed,help});
+  controls.set(id,{item,row,select,note,text,summary,printed,help});
   select.addEventListener('change',()=>changeAnswer(id));text.addEventListener('input',()=>changeAnswer(id));
-  text.addEventListener('paste',event=>{const clip=event.clipboardData;if(!clip)return;const pasted=clip.getData('text');if(!pasted)return;if(text.value.length-(text.selectionEnd-text.selectionStart)+pasted.length>NOTE_MAX)notify('Вставка обрезана: в заметке не больше 2 000 символов.');});
+  attachPasteGuard(text,notify);
   return row;
 }
+function noteHint(length){return length>NOTE_MAX-400?'Осталось '+(NOTE_MAX-length)+' из 2 000 символов.':'До 2 000 символов. Только для вас.';}
+function attachPasteGuard(text,report){text.addEventListener('paste',event=>{const clip=event.clipboardData;if(!clip)return;const pasted=clip.getData('text');if(!pasted)return;if(text.value.length-(text.selectionEnd-text.selectionStart)+pasted.length>NOTE_MAX)report('Вставка обрезана: в заметке не больше 2 000 символов.');});}
+function makeTallies(){const count=element('span',undefined,'group-count');const tallies={};TALLY_ORDER.forEach(state=>{const chip=element('span',undefined,'tally');chip.dataset.state=state;count.append(chip);tallies[state]=chip;});return {count,tallies};}
 function makeGroup(names, index, section, prefix, parent) {
   const group=element('details',undefined,'group');group.dataset.column=index;
   const summary=element('summary');const head=element('span',undefined,'group-head');const title=element('span',SOURCE.groups[index],'group-title');
-  const count=element('span',undefined,'group-count');const tallies={};
-  TALLY_ORDER.forEach(state=>{const chip=element('span',undefined,'tally');chip.dataset.state=state;count.append(chip);tallies[state]=chip;});
+  const {count,tallies}=makeTallies();
   const chevron=element('span',undefined,'chevron');chevron.setAttribute('aria-hidden','true');
   head.append(title,count);summary.append(head,chevron);const content=element('div',undefined,'group-content');const ids=[];
   names.forEach((name,i)=> {const id=prefix+'-'+index+'-'+i;ids.push(id);content.append(makeItem(name,id,section,SOURCE.groups[index]));});
-  group.append(summary,content);parent.append(group);groupViews.push({group,tallies,ids});
+  group.append(summary,content);parent.append(group);groupViews.push({group,tallies:[tallies],ids});
 }
 SOURCE.main.forEach((names,i)=>makeGroup(names,i,'Чувства и эмоции','main',$('main-groups')));
 SOURCE.thoughts.forEach((names,i)=>makeGroup(names,i,$('thoughts-title').textContent,'thought',$('thought-groups')));
 SOURCE.fears.forEach((name,i)=>$('fears').append(makeItem(name,'fear-'+i,'Страхи','')));
 function updateView(){
   let completed=0;
-  for(const item of items){const answer=answers[item.id] || {state:'unanswered',note:''};const view=controls.get(item.id);view.select.value=answer.state;view.text.value=answer.note;view.row.dataset.state=answer.state;view.summary.textContent=answer.note?'Заметка · есть запись':'Заметка';view.printed.textContent=answer.note;view.help.textContent=answer.note.length>NOTE_MAX-400?'Осталось '+(NOTE_MAX-answer.note.length)+' из 2 000 символов.':'До 2 000 символов. Только для вас.';if(answer.state!=='unanswered')completed++;}
+  for(const item of items){const answer=answers[item.id] || {state:'unanswered',note:''};const view=controls.get(item.id);view.select.value=answer.state;view.text.value=answer.note;view.row.dataset.state=answer.state;view.summary.textContent=answer.note?'Заметка · есть запись':'Заметка';view.printed.textContent=answer.note;view.help.textContent=noteHint(answer.note.length);setAttr(view.plus,'aria-pressed',String(answer.state==='remember'));setAttr(view.minus,'aria-pressed',String(answer.state==='not-yet'));view.cell.dataset.state=answer.state;view.noteBtn.dataset.hasNote=answer.note?'true':'false';setAttr(view.noteBtn,'aria-label',(answer.note?'Заметка, есть запись: ':'Заметка: ')+item.name);if(answer.state!=='unanswered')completed++;}
   $('progress').max=items.length;$('progress').value=completed;$('progress-text').textContent='Отмечено '+completed+' из '+items.length;
-  groupViews.forEach(({ids,tallies})=>{TALLY_ORDER.forEach(state=>{tallies[state].textContent=ids.filter(id=>(answers[id]?answers[id].state:'unanswered')===state).length+' '+labels[state].toLowerCase();});});
+  groupViews.forEach(({ids,tallies})=>{TALLY_ORDER.forEach(state=>{const text=ids.filter(id=>(answers[id]?answers[id].state:'unanswered')===state).length+' '+labels[state].toLowerCase();tallies.forEach(set=>{set[state].textContent=text;});});});
 }
-function changeAnswer(id){const view=controls.get(id);answers[id]={state:view.select.value,note:view.text.value.slice(0,NOTE_MAX)};updateView();save();}
+function setAttr(node,name,value){if(node.getAttribute(name)!==value)node.setAttribute(name,value);}
+function currentAnswer(id){return answers[id] || {state:'unanswered',note:''};}
+function applyAnswer(id,state,note){answers[id]={state,note:note.slice(0,NOTE_MAX)};updateView();save();}
+function changeAnswer(id){const view=controls.get(id);applyAnswer(id,view.select.value,view.text.value);}
+function toggleState(id,state){const answer=currentAnswer(id);applyAnswer(id,answer.state===state?'unanswered':state,answer.note);}
+// Table view: the same 148 answers laid out like the source table. Minus sits on the left edge, plus and note on the right, so a
+// slip between neighbours never flips an answer to its opposite.
+function makeCell(id,column){
+  const view=controls.get(id);const name=view.item.name;
+  const cell=element('div',undefined,'cell tcol');cell.dataset.id=id;if(column!==null)cell.dataset.column=column;
+  const word=element('span',name,'cell-word');
+  const minus=element('button','−','cell-btn cell-minus');minus.type='button';minus.setAttribute('aria-label','Пока нет: '+name);minus.setAttribute('aria-pressed','false');
+  const plus=element('button','+','cell-btn cell-plus');plus.type='button';plus.setAttribute('aria-label','Вспоминаю: '+name);plus.setAttribute('aria-pressed','false');
+  const noteBtn=element('button','✎','cell-btn cell-note');noteBtn.type='button';noteBtn.setAttribute('aria-label','Заметка: '+name);noteBtn.dataset.hasNote='false';
+  const right=element('span',undefined,'cell-right');right.append(plus,noteBtn);cell.append(word,minus,right);
+  minus.addEventListener('click',()=>toggleState(id,'not-yet'));plus.addEventListener('click',()=>toggleState(id,'remember'));noteBtn.addEventListener('click',()=>openSheet(id));
+  Object.assign(view,{cell,minus,plus,noteBtn});return cell;
+}
+function buildTable(){
+  const grid=$('table-grid');
+  const place=(node,row,col,full)=>{node.style.gridRow=row;node.style.gridColumn=full?'1 / -1':col;grid.append(node);};
+  const header=(row,minor,offset)=>{SOURCE.groups.forEach((name,c)=>{const h=element('div',undefined,minor?'hcell hcell-minor tcol':'hcell tcol');h.dataset.column=c;h.append(element('span',name,'hcell-title'));const {count,tallies}=makeTallies();h.append(count);groupViews[offset+c].tallies.push(tallies);place(h,row,c+1);});};
+  const block=(prefix,columns,start)=>{const rows=Math.max(...columns.map(names=>names.length));columns.forEach((names,c)=>{for(let i=0;i<rows;i++){const node=i<names.length?makeCell(prefix+'-'+c+'-'+i,c):element('div',undefined,'cell-empty tcol');node.dataset.column=c;place(node,start+i,c+1);}});return start+rows;};
+  header(1,false,0);let row=block('main',SOURCE.main,2);
+  place(element('div',$('thoughts-title').textContent,'table-sep'),row++,1,true);header(row++,true,SOURCE.main.length);row=block('thought',SOURCE.thoughts,row);
+  place(element('div','Страхи','table-sep'),row++,1,true);SOURCE.fears.forEach((name,i)=>place(makeCell('fear-'+i,null),row+Math.floor(i/5),(i%5)+1));
+}
+buildTable();
 const STORAGE_KEY='emotions-form:v1';
 const MAX_FILE_BYTES=2*1024*1024;
 let lastStored=null;
@@ -159,7 +199,22 @@ window.addEventListener('beforeunload',event=>{if(storageLocked && hasAnswers())
 let printOpen=[];
 window.addEventListener('beforeprint',()=>{printOpen=groupViews.map(view=>view.group.open);groupViews.forEach(view=>view.group.open=true);});
 window.addEventListener('afterprint',()=>groupViews.forEach((view,i)=>{view.group.open=printOpen[i];}));
-load();updateView();
+let sheetId=null,sheetOpener=null,sheetPasteCut=false;
+$('sheet-note').maxLength=NOTE_MAX;
+function openSheet(id){const {item,noteBtn}=controls.get(id);sheetId=id;sheetOpener=noteBtn;$('sheet-title').textContent=item.name;$('sheet-context').textContent=item.section+(item.group?' / '+item.group:'');const text=$('sheet-note');text.value=currentAnswer(id).note;$('sheet-help').textContent=noteHint(text.value.length);$('sheet-notice').textContent='';$('note-sheet').hidden=false;text.focus();}
+function closeSheet(){if(sheetId===null)return;$('note-sheet').hidden=true;const opener=sheetOpener;sheetId=null;sheetOpener=null;if(opener)opener.focus();}
+$('sheet-note').addEventListener('input',()=>{if(sheetId===null)return;applyAnswer(sheetId,currentAnswer(sheetId).state,$('sheet-note').value);$('sheet-help').textContent=noteHint(currentAnswer(sheetId).note.length);if(sheetPasteCut)sheetPasteCut=false;else $('sheet-notice').textContent='';});
+attachPasteGuard($('sheet-note'),message=>{sheetPasteCut=true;$('sheet-notice').textContent=message;});
+$('sheet-close').addEventListener('click',closeSheet);
+$('note-sheet').addEventListener('click',event=>{if(event.target===$('note-sheet'))closeSheet();});
+$('note-sheet').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closeSheet();return;}if(event.key!=='Tab')return;const first=$('sheet-note'),last=$('sheet-close');if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}});
+const VIEW_KEY='emotions-form:view';
+function fitTable(){if($('table-view').hidden)return;const scroll=$('table-scroll');scroll.classList.remove('fits');const fits=scroll.scrollWidth<=scroll.clientWidth+1;scroll.classList.toggle('fits',fits);$('table-hint').hidden=fits;}
+function setView(view,persist){const table=view==='table';$('cards-view').hidden=table;$('table-view').hidden=!table;$('view-cards').setAttribute('aria-pressed',String(!table));$('view-table').setAttribute('aria-pressed',String(table));if(persist){try{localStorage.setItem(VIEW_KEY,view);}catch(error){}}fitTable();}
+$('view-cards').addEventListener('click',()=>setView('cards',true));$('view-table').addEventListener('click',()=>setView('table',true));
+window.addEventListener('resize',fitTable);
+let storedView='cards';try{if(localStorage.getItem(VIEW_KEY)==='table')storedView='table';}catch(error){}
+load();updateView();setView(storedView,false);
 </script>
 </body>
 </html>
