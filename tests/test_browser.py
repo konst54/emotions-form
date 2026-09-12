@@ -244,5 +244,18 @@ class FormTests(unittest.TestCase):
             for phrase in ['браузере', 'устройстве', 'удалить', 'JSON']:
                 self.assertIn(phrase, reminder.inner_text())
 
+    def test_14_note_never_exceeds_stored_limit(self):
+        """A note longer than the limit must never be persisted: the app would
+        refuse to load its own copy and would lock autosave."""
+        self.page.evaluate("""()=>{const t=document.getElementById('note-main-0-0');
+            t.value='a'.repeat(2500); t.dispatchEvent(new Event('input'));}""")
+        stored = self.page.evaluate("()=>JSON.parse(localStorage.getItem('emotions-form:v1')).answers['main-0-0'].note.length")
+        self.assertEqual(stored, 2000)
+        self.assertEqual(len(self.page.locator('#note-main-0-0').input_value()), 2000)
+        self.page.reload()
+        self.assertFalse(self.page.locator('#storage-warning').is_visible())
+        self.assertEqual(len(self.page.locator('#note-main-0-0').input_value()), 2000)
+        self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 0 из 148')
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
