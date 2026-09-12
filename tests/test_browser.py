@@ -375,19 +375,46 @@ class FormTests(unittest.TestCase):
         self.page.reload()
         self.assertTrue(self.page.locator('#cards-view').is_visible())
 
-    def test_18_table_view_fits_landscape_scrolls_portrait(self):
-        for width, height, fits in [(390, 844, False), (844, 390, True), (1024, 768, True), (1440, 1000, True)]:
+    def test_18_table_view_per_screen(self):
+        """Narrow screens: the whole feelings block fits one screen above the fixed bar and a tap only selects;
+        wide screens: three buttons per cell and no horizontal scroll."""
+        MAIN_BLOCK = """()=>{const cells=[...document.querySelectorAll('#table-grid .cell, #table-grid .cell-empty')].filter(c=>parseInt(c.style.gridRow)<=23);
+            const top=document.querySelector('#table-grid .hcell').getBoundingClientRect().top;
+            return Math.round(Math.max(...cells.map(c=>c.getBoundingClientRect().bottom))-top);}"""
+        for width, height in [(360, 780), (390, 844), (844, 390), (1024, 768), (1440, 1000)]:
             self.page.set_viewport_size({'width': width, 'height': height})
             self.page.reload()
             self.page.locator('#view-table').click()
             self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'), (width, height))
-            scrolls = self.page.evaluate("()=>{const s=document.getElementById('table-scroll');return s.scrollWidth>s.clientWidth+1;}")
-            self.assertEqual(scrolls, not fits, (width, height))
-            self.assertEqual(self.page.locator('#table-hint').is_visible(), not fits, (width, height))
-            box = self.page.locator('.cell[data-id="main-1-0"] .cell-minus').bounding_box()
-            self.assertGreaterEqual(min(box['width'], box['height']), 40, (width, height))
+            self.assertFalse(self.page.evaluate("()=>{const s=document.getElementById('table-scroll');return s.scrollWidth>s.clientWidth+1;}"), (width, height))
             self.assertEqual(self.page.locator('#table-grid .hcell').count(), 10)
-            self.assertEqual(self.page.locator('#table-grid .table-sep').count(), 2)
+            compact = width < 900
+            self.assertEqual(self.page.locator('#table-bar').is_visible(), compact, (width, height))
+            self.assertEqual(self.page.locator('.cell[data-id="main-1-0"] .cell-minus').is_visible(), not compact, (width, height))
+            if compact:
+                if width < 400:  # phone portrait: header + 22 rows within a Safari-sized viewport minus the bar
+                    self.assertLessEqual(self.page.evaluate(MAIN_BLOCK), 620, (width, height))
+                    self.assertLess(self.page.locator('#table-grid .hcell').first.bounding_box()['y'], 40)
+                self.page.locator('.cell[data-id="main-1-6"] .cell-pick').click()
+                self.assertEqual(self.page.locator('.cell[data-id="main-1-6"]').get_attribute('data-state'), 'unanswered')
+                self.assertEqual(self.page.locator('#bar-word').inner_text(), 'Ошарашенность')
+                self.page.locator('#bar-plus').click()
+                self.assertEqual(self.page.locator('.cell[data-id="main-1-6"]').get_attribute('data-state'), 'remember')
+                self.assertEqual(self.page.locator('#answer-main-1-6').input_value(), 'remember')
+                self.page.locator('#bar-note').click()
+                expect(self.page.locator('#note-sheet')).to_be_visible()
+                self.page.keyboard.type('из панели'); self.page.keyboard.press('Escape')
+                self.assertEqual(self.page.locator('#bar-note').get_attribute('data-has-note'), 'true')
+                self.assertEqual(self.page.evaluate('document.activeElement.id'), 'bar-note')
+                for selector in ['#bar-minus', '#bar-plus', '#bar-note']:
+                    box = self.page.locator(selector).bounding_box()
+                    self.assertGreaterEqual(min(box['width'], box['height']), 44, (width, selector))
+                self.assertEqual(self.page.locator('#table-grid .hcell').nth(1).locator('.tally').all_text_contents(),
+                                 ['1 вспоминаю', '0 пока нет', '20 без ответа'])
+            else:
+                box = self.page.locator('.cell[data-id="main-1-0"] .cell-minus').bounding_box()
+                self.assertGreaterEqual(min(box['width'], box['height']), 40, (width, height))
+            self.page.evaluate('localStorage.clear()')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
