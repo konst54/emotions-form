@@ -6,10 +6,16 @@ import unittest
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
-os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(ROOT / '.browsers')
+os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', str(ROOT / '.browsers'))
 TARGET_URL = os.environ.get('TEST_BASE_URL', ROOT.joinpath('index.html').as_uri())
 BROWSER = os.environ.get('TEST_BROWSER', 'chromium')
 RESULTS = ROOT / 'test-results' / (BROWSER + ('-http' if TARGET_URL.startswith('http') else '-file'))
+
+def open_group(page, index=0, container='.main-groups'):
+    """Groups render collapsed; open one before touching its rows."""
+    if page.locator(f'{container} > .group').nth(index).get_attribute('open') is None:
+        page.locator(f'{container} > .group > summary').nth(index).click()
+
 
 class FormTests(unittest.TestCase):
     @classmethod
@@ -31,6 +37,9 @@ class FormTests(unittest.TestCase):
     def tearDown(self):
         self.context.close()
 
+    def open_group(self, index=0, container='.main-groups'):
+        open_group(self.page, index, container)
+
     def test_01_table_and_labels(self):
         self.assertEqual(self.page.locator('select[data-answer]').count(), 148)
         self.assertEqual(self.page.locator('.main-groups > .group').count(), 5)
@@ -42,6 +51,7 @@ class FormTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
 
     def test_02_autosave_reload(self):
+        self.open_group()
         self.page.locator('#answer-main-0-0').select_option('remember')
         self.page.locator('[data-id="main-0-0"] .note > summary').click()
         self.page.locator('#note-main-0-0').fill('Тестовая заметка\nНовая строка')
@@ -49,7 +59,8 @@ class FormTests(unittest.TestCase):
         self.assertEqual(self.page.locator('#answer-main-0-0').input_value(), 'remember')
         self.assertEqual(self.page.locator('#note-main-0-0').input_value(), 'Тестовая заметка\nНовая строка')
         self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 1 из 148')
-        self.assertEqual(self.page.locator('.main-groups .group-count').first.inner_text(), '1 / 16')
+        self.assertEqual(self.page.locator('.main-groups > .group').first.locator('.tally').all_text_contents(),
+                         ['1 вспоминаю', '0 пока нет', '15 без ответа'])
         self.assertIsNotNone(self.page.evaluate("localStorage.getItem('emotions-form:v1')"))
 
     def download(self, selector):
@@ -62,6 +73,7 @@ class FormTests(unittest.TestCase):
         self.page.locator('#import-file').set_input_files({'name': 'backup.json', 'mimeType': 'application/json', 'buffer': raw.encode()})
 
     def test_03_export_import_roundtrip(self):
+        self.open_group()
         self.page.locator('#answer-main-0-0').select_option('remember')
         self.page.locator('[data-id="main-0-0"] .note > summary').click()
         self.page.locator('#note-main-0-0').fill('Тестовая запись')
@@ -117,6 +129,7 @@ class FormTests(unittest.TestCase):
 
     def test_06_confirmations(self):
         blank = json.loads(self.download('#export-json'))
+        self.open_group()
         self.page.locator('#answer-main-0-0').select_option('remember')
         self.page.once('dialog', lambda dialog: dialog.dismiss())
         self.upload(blank)
@@ -132,10 +145,12 @@ class FormTests(unittest.TestCase):
         self.assertEqual(self.page.locator('#answer-main-0-0').input_value(), 'unanswered')
 
     def test_07_corrupt_storage_preserved_and_recovery(self):
+        self.open_group()
         damaged = '{broken secret data'
         self.page.evaluate('(raw)=>localStorage.setItem("emotions-form:v1",raw)', damaged)
         self.page.reload()
         self.assertTrue(self.page.locator('#storage-warning').is_visible())
+        self.open_group()
         self.page.locator('#answer-main-0-0').select_option('remember')
         self.assertEqual(self.page.evaluate("localStorage.getItem('emotions-form:v1')"), damaged)
         self.assertEqual(self.download('#download-damaged'), damaged)
@@ -153,6 +168,7 @@ class FormTests(unittest.TestCase):
             context = self.browser.new_context()
             context.add_init_script(f"Storage.prototype.{method}=function(){{throw new DOMException('blocked','QuotaExceededError')}}")
             page = context.new_page(); page.goto(TARGET_URL)
+            open_group(page)
             page.locator('#answer-main-0-0').select_option('remember')
             self.assertTrue(page.locator('#storage-warning').is_visible())
             self.assertIn('приостановлено', page.locator('#save-status').inner_text())
@@ -168,8 +184,8 @@ class FormTests(unittest.TestCase):
             self.page.set_viewport_size({'width': width, 'height': 960})
             self.page.reload()
             self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'), width)
+            self.assertIsNone(self.page.locator('.main-groups > .group').first.get_attribute('open'), width)
             if width < 900:
-                self.assertTrue(self.page.locator('.main-groups > .group').first.get_attribute('open') is not None)
                 self.assertIsNone(self.page.locator('.main-groups > .group').nth(1).get_attribute('open'))
                 self.page.locator('.main-groups > .group > summary').nth(1).click()
                 self.assertTrue(self.page.locator('#answer-main-1-0').is_visible())
@@ -196,6 +212,7 @@ class FormTests(unittest.TestCase):
         self.page.on('request', lambda request: requests.append((request.url, request.resource_type, request.method)))
         self.page.on('pageerror', lambda error: errors.append(str(error)))
         self.page.reload()
+        self.open_group()
         self.page.locator('#answer-main-0-0').select_option('remember')
         self.assertEqual(requests, [(self.page.url, 'document', 'GET')])
         self.assertEqual(errors, [])
@@ -205,6 +222,7 @@ class FormTests(unittest.TestCase):
             self.assertIn(directive, policy)
 
     def test_11_conflicting_storage_is_not_overwritten(self):
+        self.open_group()
         self.page.locator('#answer-main-0-0').select_option('remember')
         original = self.page.evaluate("localStorage.getItem('emotions-form:v1')")
         other = json.loads(original); other['answers']['main-0-0']['state'] = 'not-yet'
@@ -217,6 +235,7 @@ class FormTests(unittest.TestCase):
     def test_12_mobile_keyboard_and_text_size(self):
         context = self.browser.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True, device_scale_factor=3)
         page = context.new_page(); page.goto(TARGET_URL)
+        open_group(page)
         self.assertGreaterEqual(page.locator('#answer-main-0-0').evaluate('(el)=>parseFloat(getComputedStyle(el).fontSize)'), 16)
         page.locator('#answer-main-0-0').select_option('not-yet')
         page.locator('[data-id="main-0-0"] .note > summary').tap()
@@ -236,13 +255,75 @@ class FormTests(unittest.TestCase):
         for width in [320, 390]:
             self.page.set_viewport_size({'width': width, 'height': 844})
             self.page.reload()
-            first_answer = self.page.locator('#answer-main-0-0').bounding_box()
-            self.assertLess(first_answer['y'], 844, 'First answer should be within the initial mobile screen')
+            first_group = self.page.locator('.main-groups > .group > summary').first.bounding_box()
+            self.assertLess(first_group['y'], 844, 'First group header should be within the initial mobile screen')
             reminder = self.page.locator('#storage-reminder')
             expect(reminder).to_be_visible()
             self.assertLess(reminder.bounding_box()['y'], 400)
             for phrase in ['браузере', 'устройстве', 'удалить', 'JSON']:
                 self.assertIn(phrase, reminder.inner_text())
+
+    def test_14_note_never_exceeds_stored_limit(self):
+        """A note longer than the limit must never be persisted: the app would
+        refuse to load its own copy and would lock autosave."""
+        self.page.evaluate("""()=>{const t=document.getElementById('note-main-0-0');
+            t.value='a'.repeat(2500); t.dispatchEvent(new Event('input'));}""")
+        stored = self.page.evaluate("()=>JSON.parse(localStorage.getItem('emotions-form:v1')).answers['main-0-0'].note.length")
+        self.assertEqual(stored, 2000)
+        self.assertEqual(len(self.page.locator('#note-main-0-0').input_value()), 2000)
+        self.page.reload()
+        self.assertFalse(self.page.locator('#storage-warning').is_visible())
+        self.assertEqual(len(self.page.locator('#note-main-0-0').input_value()), 2000)
+        self.assertIn('Осталось 0 из 2 000', self.page.locator('#help-main-0-0').text_content())
+        self.page.evaluate("""()=>{const t=document.getElementById('note-main-0-0');
+            t.value='a'.repeat(1700); t.dispatchEvent(new Event('input'));}""")
+        self.assertIn('Осталось 300 из 2 000', self.page.locator('#help-main-0-0').text_content())
+        self.page.evaluate("""()=>{const t=document.getElementById('note-main-0-0');
+            t.value='a'.repeat(10); t.dispatchEvent(new Event('input'));}""")
+        self.assertIn('До 2 000 символов', self.page.locator('#help-main-0-0').text_content())
+        self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 0 из 148')
+
+    def test_15_groups_start_collapsed_and_tally_every_state(self):
+        for index in range(5):
+            self.assertIsNone(self.page.locator('.main-groups > .group').nth(index).get_attribute('open'))
+            self.assertIsNone(self.page.locator('.thought-groups > .group').nth(index).get_attribute('open'))
+        group = self.page.locator('.main-groups > .group').first
+        self.assertEqual(group.locator('.tally').all_text_contents(),
+                         ['0 вспоминаю', '0 пока нет', '16 без ответа'])
+        self.open_group()
+        self.assertIsNotNone(group.get_attribute('open'))
+        self.assertTrue(self.page.locator('#answer-main-0-0').is_visible())
+        self.page.locator('#answer-main-0-0').select_option('remember')
+        self.page.locator('#answer-main-0-1').select_option('not-yet')
+        self.page.locator('#answer-main-0-2').select_option('not-yet')
+        self.assertEqual(group.locator('.tally').all_text_contents(),
+                         ['1 вспоминаю', '2 пока нет', '13 без ответа'])
+        self.assertEqual(sum(int(t.split()[0]) for t in group.locator('.tally').all_text_contents()), 16)
+        # a group opened by hand stays open across a width change
+        self.page.set_viewport_size({'width': 390, 'height': 844})
+        self.page.wait_for_timeout(120)
+        self.assertIsNotNone(group.get_attribute('open'))
+        # and collapsing is available on a wide screen too
+        self.page.set_viewport_size({'width': 1440, 'height': 1000})
+        self.page.locator('.main-groups > .group > summary').first.click()
+        self.assertIsNone(group.get_attribute('open'))
+
+    def test_16_max_fill_export_stays_importable(self):
+        """NOTE_MAX and the 2 MB import cap are coupled: the fullest form the UI
+        allows must still produce a backup this same form accepts."""
+        self.page.evaluate("""()=>{
+            document.querySelectorAll('select[data-answer]').forEach(s=>{s.value='remember';s.dispatchEvent(new Event('change'));});
+            document.querySelectorAll('textarea[id^=note-]').forEach(t=>{t.value='ы'.repeat(2000);t.dispatchEvent(new Event('input'));});
+        }""")
+        self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 148 из 148')
+        raw = self.download('#export-json')
+        self.assertLess(len(raw.encode('utf-8')), 2 * 1024 * 1024)
+        self.page.once('dialog', lambda dialog: dialog.accept())
+        self.page.locator('#reset').click()
+        self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 0 из 148')
+        self.upload(raw)
+        expect(self.page.locator('#progress-text')).to_have_text('Отмечено 148 из 148')
+        self.assertEqual(len(self.page.locator('#note-main-0-0').input_value()), 2000)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
