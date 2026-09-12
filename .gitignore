@@ -1,0 +1,7 @@
+.venv/
+.browsers/
+test-results/
+__pycache__/
+*.pyc
+.env
+.env.*

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="color-scheme" content="light">
+<meta name="description" content="Личная карта чувств: вспомните свой опыт и сохраните заметки только в своём браузере.">
+<title>Карта чувств — время услышать себя</title>
+<style>
+:root{--ink:#233b37;--muted:#596d66;--paper:#f6f6ee;--line:#d9e0d5;--accent:#275e49;--white:#fffef9;--anger:#a74631;--fear:#7c6094;--sad:#476e94;--joy:#906600;--love:#437454;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--paper);font-size:16px;line-height:1.5}
+*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit;color:inherit}button,select,summary{cursor:pointer}button{min-height:44px;border:1px solid #b4c4b8;border-radius:10px;background:var(--white);padding:10px 16px;font-weight:600}button:hover{background:#e9eee4}button.primary{background:var(--accent);color:white;border-color:var(--accent)}button.primary:hover{background:#1e4939}button.quiet{background:transparent}button:disabled{opacity:.6;cursor:not-allowed}:focus-visible{outline:3px solid #145dba;outline-offset:3px}a{color:var(--accent);text-underline-offset:3px}p{margin:0 0 14px}h1,h2,h3{margin:0;font-weight:650;line-height:1.16;letter-spacing:-.035em}h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:clamp(42px,5vw,70px);max-width:740px;margin:18px 0}h2{font-size:clamp(25px,3vw,34px)}.wrap{max-width:1504px;margin:auto;padding:0 40px}.skip{position:absolute;top:-100px;left:16px;padding:10px;background:white;z-index:9}.skip:focus{top:8px}.topline{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:27px 0;border-bottom:1px solid var(--line);font-size:14px}.brand{font-weight:750;font-size:18px;display:flex;align-items:center;gap:10px}.brand-mark{display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--accent);border-radius:50%;color:var(--accent);font-size:23px}.private{color:var(--muted);display:flex;align-items:center;gap:8px}.private:before{content:"";width:7px;height:7px;background:#487858;border-radius:50%;flex-shrink:0}.hero{display:grid;grid-template-columns:1.55fr 1fr;gap:64px;padding:54px 0 38px;align-items:center}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}.intro{font-size:18px;max-width:680px;color:var(--muted)}.guide{padding:24px 26px;background:#eaf0e4;border-radius:18px;border:1px solid #dbe4d4}.guide h2{font-size:19px;letter-spacing:-.015em;margin-bottom:16px}.guide ol{padding:0;margin:0;list-style:none;counter-reset:steps}.guide li{counter-increment:steps;display:flex;gap:12px;margin:12px 0;font-size:14px}.guide li:before{content:counter(steps,decimal-leading-zero);color:var(--accent);font-size:12px;font-weight:700;padding-top:3px}.guide strong{font-weight:650}.guide small{display:block;margin-top:16px;padding-top:14px;border-top:1px solid #cedac6;color:var(--muted);font-size:12px}.workbench{border:1px solid var(--line);border-radius:16px;background:var(--white);padding:22px 24px;margin-bottom:20px}.workbench-top{display:flex;justify-content:space-between;align-items:center;gap:18px}.progress-copy{font-size:14px;min-width:190px}.progress-copy strong{display:block;font-size:20px;letter-spacing:-.025em}.progress-copy span{color:var(--muted);font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}progress{width:100%;height:6px;border:0;display:block;border-radius:99px;overflow:hidden;background:#e8ede4;margin-top:20px;accent-color:var(--accent)}progress::-webkit-progress-bar{background:#e8ede4}progress::-webkit-progress-value{background:var(--accent)}progress::-moz-progress-bar{background:var(--accent)}.save-line{font-size:12px;color:var(--muted);margin-top:12px}.warning{border:1px solid #ba8051;border-radius:12px;background:#fff1dc;padding:16px;margin:14px 0;font-size:14px}.warning p{margin-bottom:8px}.warning[hidden],[hidden]{display:none!important}.notification{font-size:14px;padding:0 2px;min-height:24px;color:var(--accent)}.section{padding:24px 0 22px}.section-heading{display:flex;gap:16px;align-items:flex-start;margin-bottom:22px}.section-number{font-family:Georgia,serif;font-size:20px;color:#718475;line-height:1.7}.section-heading p{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:750px}.group-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:start}.group{--tone:var(--anger);--tint:#f5e7df;min-width:0;border:1px solid var(--line);border-radius:14px;background:var(--white);overflow:hidden}.group[data-column="1"]{--tone:var(--fear);--tint:#eee9f4}.group[data-column="2"]{--tone:var(--sad);--tint:#e5edf5}.group[data-column="3"]{--tone:var(--joy);--tint:#f6eed2}.group[data-column="4"]{--tone:var(--love);--tint:#e5eee2}.group>summary{padding:18px 14px;background:var(--tint);list-style:none;display:flex;align-items:center;gap:8px;border-top:3px solid var(--tone);min-height:76px}.group>summary::-webkit-details-marker{display:none}.group-title{font-size:20px;font-weight:650;letter-spacing:-.03em;flex:1;min-width:0}.group-count{font-size:11px;white-space:nowrap;color:var(--tone)}.chevron{display:none}.group-content{padding:0 12px}.item{padding:13px 0 9px;border-bottom:1px solid #e5e8df;min-width:0}.item:last-child{border-bottom:0}.item-name{font-size:14px;font-weight:600;display:block;min-height:42px;line-height:1.35;overflow-wrap:anywhere}.item select{display:block;width:100%;min-width:0;min-height:40px;border:1px solid #ccd6ca;border-radius:8px;padding:7px 6px;background:var(--white);font-size:13px}.item[data-state="remember"] select{background:#e4eee0;border-color:#8ea785}.item[data-state="not-yet"] select{background:#edf0f1;border-color:#abb8bb}.note>summary{list-style:none;font-size:12px;color:var(--muted);padding:9px 0;min-height:38px}.note>summary::-webkit-details-marker{display:none}.note>summary:before{content:"＋ ";font-size:14px}.note[open]>summary:before{content:"− "}.note textarea{resize:vertical;display:block;width:100%;min-height:92px;border:1px solid #a9bbab;border-radius:8px;background:#fff;padding:9px;font-size:16px;line-height:1.45}.note-help{font-size:10px;display:block;color:var(--muted);margin-top:5px}.thought-groups .group>summary{background:#f0f2ea;min-height:58px;border-top-width:2px;padding:13px 14px}.thought-groups .group-title{font-size:15px;color:var(--muted)}.thought-groups .group-content{background:#fcfcf7}.fears-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0 22px;background:var(--white);padding:6px 20px 12px;border:1px solid var(--line);border-radius:14px}.fears-grid .item{border-bottom:1px solid #e5e8df}.fears-grid .item:nth-last-child(-n+5){border-bottom:0}.privacy{border-top:1px solid var(--line);margin:28px 0 0;padding:28px 0;display:grid;grid-template-columns:1fr 2fr;gap:40px}.privacy h2{font-size:21px;letter-spacing:-.02em}.privacy p{font-size:13px;color:var(--muted)}.footer{border-top:1px solid var(--line);padding:18px 0 30px;display:flex;justify-content:space-between;align-items:center;gap:20px;color:var(--muted);font-size:12px}.footer button{font-size:12px;color:#864839;padding:6px 12px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1050px){.wrap{padding:0 24px}.hero{gap:28px}.group-grid{gap:8px}.group-content{padding:0 9px}.group>summary{padding:15px 9px;gap:5px}.group-title{font-size:18px}.group-count{font-size:10px}.thought-groups .group>summary{padding:13px 9px}.actions button{font-size:13px;padding:9px 11px}.item-name{font-size:13px}.item select{font-size:12px}}
+@media(max-width:899px){.hero{grid-template-columns:1fr;gap:24px;padding:32px 0 24px}h1{max-width:600px}.guide{padding:18px 22px}.guide ol{display:flex;gap:18px}.guide li{flex:1}.workbench-top{align-items:flex-start;flex-direction:column}.group-grid{grid-template-columns:1fr;gap:10px}.group>summary,.thought-groups .group>summary{min-height:62px;padding:15px 18px}.group-title,.thought-groups .group-title{font-size:19px}.group-count{font-size:12px}.chevron{display:inline-block;color:var(--tone);font-size:18px;margin-left:8px;transform:rotate(0deg)}.group[open] .chevron{transform:rotate(180deg)}.group-content{padding:0 18px}.item{display:grid;grid-template-columns:minmax(0,1fr) 135px;column-gap:14px;padding:12px 0 2px}.item-name{min-height:44px;display:flex;align-items:center;font-size:15px}.item select{font-size:16px;min-height:44px;align-self:center}.note{grid-column:1/-1}.note>summary{min-height:44px;padding-top:9px}.note textarea{min-height:88px}.fears-grid{grid-template-columns:1fr;padding:0 18px}.fears-grid .item:nth-last-child(-n+5){border-bottom:1px solid #e5e8df}.fears-grid .item:last-child{border:0}.privacy{grid-template-columns:1fr;gap:16px}.section{padding-top:22px}.item-name{overflow-wrap:anywhere}}
+@media(max-width:520px){.wrap{padding:0 16px}.topline{padding:20px 0}.brand{font-size:16px}.private{font-size:11px;max-width:105px;line-height:1.3}h1{font-size:43px;margin:13px 0 16px}.intro{font-size:16px}.guide ol{display:block}.guide li{margin:10px 0}.guide small{margin-top:12px}.hero{padding-top:28px;gap:18px}.workbench{padding:18px 16px}.actions{display:grid;width:100%;grid-template-columns:1fr 1fr}.actions button{padding:10px 8px;font-size:12px}.actions .primary{grid-column:1/-1}.progress-copy strong{font-size:20px}.section-heading{gap:10px}h2{font-size:26px}.section-heading p{font-size:13px}.group>summary,.thought-groups .group>summary{padding:14px}.group-content{padding:0 12px}.item{grid-template-columns:minmax(0,1fr) 135px;gap:0 9px}.item-name{font-size:14px}.item select{font-size:16px;padding-left:5px}.fears-grid{padding:0 12px}.footer{align-items:flex-start;flex-direction:column;gap:12px}.warning button{width:100%;margin-top:8px}.privacy{padding:24px 0}.section-number{font-size:17px}}
+@media(prefers-reduced-motion:no-preference){button{transition:background .15s}.chevron{transition:transform .15s}}
+@media print{body{background:white;color:black;font-size:10pt}.wrap{padding:0;max-width:none}.hero{display:block;padding:16px 0}.hero h1{font-size:30pt}.guide,.workbench,.notification,.warning,.footer button,.skip{display:none!important}.private{color:black}.group-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.group{break-inside:auto;border-color:#bbb}.group>summary{padding:8px;min-height:0}.group-title{font-size:12pt}.group-content{padding:0 6px}.item{display:block;break-inside:avoid;padding:8px 0}.item-name{font-size:9pt;min-height:0}.item select{appearance:none;border:0;font-size:9pt;padding:0;min-height:0;background:transparent!important}.note>summary{display:none}.note textarea{display:none}.print-note{font-size:8pt;white-space:pre-wrap;overflow-wrap:anywhere}.fears-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.section-heading p,.privacy p{font-size:9pt}.privacy{grid-template-columns:1fr}.chevron{display:none}.section{padding:12px 0}}
+@media screen{.print-note{display:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#feelings">К заполнению</a>
+<div class="wrap">
+<header class="topline"><div class="brand"><span class="brand-mark" aria-hidden="true">✳</span> Карта чувств</div><span class="private">Личное пространство</span></header>
+<main>
+<section class="hero" aria-labelledby="page-title"><div><div class="eyebrow">Практика самонаблюдения</div><h1 id="page-title">Время услышать себя.</h1><p class="intro">Какие чувства вам знакомы? Не торопитесь: вспомните ситуации, в которых вы их переживали, и оставьте несколько слов для себя.</p></div><aside class="guide"><h2>Здесь нет правильных ответов</h2><ol><li><span><strong>Вспоминаю</strong> — могу вспомнить свой опыт.</span></li><li><span><strong>Пока нет</strong> — сейчас ничего не приходит на ум.</span></li><li><span>Оставьте <strong>без ответа</strong>, если хочется вернуться позже.</span></li></ol><small>Можно пропускать слова, менять ответы и делать перерывы. Это не тест и не диагностика.</small></aside></section>
+<section class="workbench" aria-label="Прогресс и сохранение"><div class="workbench-top"><div class="progress-copy"><strong id="progress-text">Отмечено 0 из 148</strong><span>В своём темпе, без необходимости заполнить всё</span></div><div class="actions"><button class="primary" type="button" id="export-json">Скачать копию · JSON</button><button type="button" id="export-txt">Скачать текст · TXT</button><button type="button" id="import-json">Загрузить копию</button><input class="sr-only" tabindex="-1" type="file" id="import-file" accept=".json,application/json" aria-label="Файл резервной копии JSON"></div></div><progress id="progress" value="0" max="148" aria-labelledby="progress-text"></progress><div id="save-status" class="save-line" role="status">Сохранение в этом браузере</div></section>
+<div id="storage-warning" class="warning" role="alert" hidden><p id="storage-message"></p><button id="download-damaged" type="button" hidden>Скачать исходные данные</button><button id="recover-storage" type="button" hidden>Заменить повреждённую копию</button></div>
+<div id="notice" class="notification" role="status" aria-live="polite"></div>
+<noscript><div class="warning">Для заполнения формы нужен JavaScript. Включите его в настройках браузера. Данные не отправляются на сервер.</div></noscript>
+<section class="section" id="feelings" aria-labelledby="feelings-title"><div class="section-heading"><span class="section-number" aria-hidden="true">01</span><div><h2 id="feelings-title">Чувства и эмоции</h2><p>Пять групп из исходной таблицы. В каждой — слова, за которыми может стоять ваш собственный опыт.</p></div></div><div class="group-grid main-groups" id="main-groups"></div></section>
+<section class="section" aria-labelledby="thoughts-title"><div class="section-heading"><span class="section-number" aria-hidden="true">02</span><div><h2 id="thoughts-title">Мысли (или состояния человека), вызванные гаммой чувств</h2><p>Расположение под группами сохранено из исходной таблицы. Это ориентир для чтения, а не научная классификация или однозначная связь с чувством.</p></div></div><div class="group-grid thought-groups" id="thought-groups"></div></section>
+<section class="section" aria-labelledby="fears-title"><div class="section-heading"><span class="section-number" aria-hidden="true">03</span><div><h2 id="fears-title">Страхи</h2><p>Отдельные темы для бережного наблюдения за собой.</p></div></div><div class="fears-grid" id="fears"></div></section>
+<section class="privacy" aria-labelledby="privacy-title"><h2 id="privacy-title">Ваши ответы остаются у вас.</h2><div><p>Автосохранение работает только в этом браузере на этом устройстве, если доступно локальное хранилище. Форма не отправляет ответы на сервер: здесь нет аналитики, внешних шрифтов и сетевых запросов из приложения.</p><p>Браузер может удалить данные — например, при очистке истории или закрытии приватного режима. Для долгого хранения скачивайте копию JSON; её можно загрузить обратно. TXT удобен для чтения, но не для восстановления.</p><p>Возвращайтесь по тому же адресу в том же браузере — Chrome или Safari. Ссылка на форму передаёт только пустую форму, не ваши ответы (в вашем браузере по ней откроется ваша сохранённая копия). Скачанные файлы содержат личные записи: храните их конфиденциально и передавайте только осознанно.</p></div></section>
+</main><footer class="footer"><span>Не нужно чувствовать «как надо». Достаточно замечать.</span><button type="button" class="quiet" id="reset">Очистить мои ответы</button></footer>
+</div>
+<script>
+'use strict';
+const SOURCE = {"groups": ["Гнев", "Страх", "Грусть", "Радость", "Любовь"], "main": [["Бешенство", "Ярость", "Ненависть", "Истерия", "Злость", "Раздражение", "Презрение", "Негодование", "Обида", "Ревность", "Уязвленность", "Досада", "Зависть", "Неприязнь", "Возмущение", "Отвращение"], ["Ужас", "Отчаяние", "Испуг", "Оцепенение", "Подозрение", "Тревога", "Ошарашенность", "Беспокойство", "Боязнь", "Унижение", "Замешательство", "Растерянность", "Вина, стыд", "Сомнение", "Застенчивость", "Опасение", "Смущение", "Сломленность", "Подвох", "Надменность", "Ошеломленность"], ["Горечь", "Тоска", "Скорбь", "Лень", "Жалость", "Отрешенность", "Отчаяние", "Беспомощность", "Душевная боль", "Безнадежность", "Отчужденность", "Разочарование", "Потрясение", "Сожаление", "Скука", "Безысходность", "Печаль", "Загнанность"], ["Счастье", "Восторг", "Ликование", "Приподнятость", "Оживление", "Умиротворение", "Увлечение", "Интерес", "Забота", "Ожидание", "Возбуждение", "Предвкушение", "Надежда", "Любопытство", "Освобождение", "Принятие", "Нетерпение", "Вера", "Изумление"], ["Нежность", "Теплота", "Сочувствие", "Блаженство", "Доверие", "Безопасность", "Благодарность", "Спокойствие", "Симпатия", "Идентичность", "Гордость", "Восхищение", "Уважение", "Самоценность", "Влюбленность", "Любовь к себе", "Очарованность", "Смирение", "Искренность", "Дружелюбие", "Доброта", "Взаимовыручка"]], "thoughts": [["Нервозность", "Пренебрежение", "Недовольство", "Вредность", "Огорчение", "Нетерпимость", "Вседозволенность"], ["Раскаяние", "Безвыходность", "Превосходство", "Высокомерие", "Неполноценность", "Неудобство", "Неловкость", "Апатия/безразличие", "Неуверенность"], ["Тупик", "Усталость", "Принуждение", "Одиночество", "Отверженность", "Подавленность", "Холодность", "Безучастность", "Равнодушие"], ["Удовлетворение", "Уверенность", "Довольство", "Окрыленность", "Торжественность", "Жизнерадостность", "Облегчение", "Ободренность", "Удивление"], ["Сопереживание", "Сопричастность", "Уравновешенность", "Смирение", "Естественность", "Жизнелюбие", "Вдохновение", "Воодушевление"]], "fears": ["Страх оценки", "Страх ошибки", "Страх нового", "Страх одиночества", "Страх ответственности", "Страх темноты", "Страх высоты", "Страх разочарования в себе", "Страх будущего", "Страх за свою жизнь"]};
+const labels = {unanswered:'Без ответа',remember:'Вспоминаю','not-yet':'Пока нет'};
+const items = [];
+const controls = new Map();
+const groupViews = [];
+let answers = {};
+const $ = id => document.getElementById(id);
+function element(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
+function makeItem(name, id, section, group) {
+  const item = {id,name,section,group}; items.push(item);
+  const row=element('div',undefined,'item'); row.dataset.id=id;
+  const label=element('label',name,'item-name'); label.htmlFor='answer-'+id;
+  const select=element('select'); select.id='answer-'+id; select.dataset.answer=id; select.setAttribute('aria-label',name+' — '+section+(group?' / '+group:''));
+  Object.entries(labels).forEach(([value,text])=> {const option=element('option',text);option.value=value;select.append(option);});
+  const note=element('details',undefined,'note'); const summary=element('summary','Заметка'); summary.setAttribute('aria-label','Заметка: '+name+' — '+section+(group?' / '+group:''));
+  const text=element('textarea'); text.id='note-'+id; text.maxLength=2000; text.rows=3; text.placeholder='Ситуация, ощущение, воспоминание…';
+  const noteLabel=element('label','Заметка: '+name,'sr-only');noteLabel.htmlFor=text.id;
+  const help=element('span','До 2 000 символов. Только для вас.','note-help');help.id='help-'+id;text.setAttribute('aria-describedby',help.id);
+  const printed=element('div','', 'print-note');
+  note.append(summary,noteLabel,text,help);row.append(label,select,note,printed);
+  controls.set(id,{row,select,note,text,summary,printed});
+  select.addEventListener('change',()=>changeAnswer(id));text.addEventListener('input',()=>changeAnswer(id));
+  return row;
+}
+function makeGroup(names, index, section, prefix, parent) {
+  const group=element('details',undefined,'group');group.dataset.column=index;group.open=window.matchMedia('(min-width:900px)').matches || index===0;
+  const summary=element('summary');const title=element('span',SOURCE.groups[index],'group-title');const count=element('span','0 / '+names.length,'group-count');const chevron=element('span','⌄','chevron');chevron.setAttribute('aria-hidden','true');
+  summary.append(title,count,chevron);const content=element('div',undefined,'group-content');const ids=[];
+  names.forEach((name,i)=> {const id=prefix+'-'+index+'-'+i;ids.push(id);content.append(makeItem(name,id,section,SOURCE.groups[index]));});
+  group.append(summary,content);parent.append(group);groupViews.push({group,count,ids});
+  summary.addEventListener('click',event=>{if(window.matchMedia('(min-width:900px)').matches)event.preventDefault();});
+}
+SOURCE.main.forEach((names,i)=>makeGroup(names,i,'Чувства и эмоции','main',$('main-groups')));
+SOURCE.thoughts.forEach((names,i)=>makeGroup(names,i,$('thoughts-title').textContent,'thought',$('thought-groups')));
+SOURCE.fears.forEach((name,i)=>$('fears').append(makeItem(name,'fear-'+i,'Страхи','')));
+const wide=window.matchMedia('(min-width:900px)');
+wide.addEventListener('change',()=>groupViews.forEach((view,i)=>view.group.open=wide.matches || i===0 || i===5));
+function updateView(){
+  let completed=0;
+  for(const item of items){const answer=answers[item.id] || {state:'unanswered',note:''};const view=controls.get(item.id);view.select.value=answer.state;view.text.value=answer.note;view.row.dataset.state=answer.state;view.summary.textContent=answer.note?'Заметка · есть запись':'Заметка';view.printed.textContent=answer.note;if(answer.state!=='unanswered')completed++;}
+  $('progress').max=items.length;$('progress').value=completed;$('progress-text').textContent='Отмечено '+completed+' из '+items.length;
+  groupViews.forEach(({ids,count})=>{count.textContent=ids.filter(id=>answers[id]&&answers[id].state!=='unanswered').length+' / '+ids.length;});
+}
+function changeAnswer(id){const view=controls.get(id);answers[id]={state:view.select.value,note:view.text.value};updateView();save();}
+const STORAGE_KEY='emotions-form:v1';
+const MAX_FILE_BYTES=2*1024*1024;
+let lastStored=null;
+let storageLocked=false;
+let damagedRaw=null;
+function packet(){const full={};items.forEach(({id})=>{full[id]=answers[id] || {state:'unanswered',note:''};});return {app:'emotions-form',version:1,answers:full};}
+function exactKeys(value, keys){return value!==null && typeof value==='object' && !Array.isArray(value) && Object.keys(value).length===keys.length && keys.every(key=>Object.hasOwn(value,key));}
+function validatePacket(value){
+  if(!exactKeys(value,['app','version','answers']) || value.app!=='emotions-form' || value.version!==1)throw new Error('Неподдерживаемый формат или версия копии.');
+  if(!exactKeys(value.answers,items.map(item=>item.id)))throw new Error('Набор строк в копии не соответствует этой форме.');
+  const clean={};
+  for(const {id} of items){const entry=value.answers[id];if(!exactKeys(entry,['state','note']) || !Object.hasOwn(labels,entry.state) || typeof entry.state!=='string' || typeof entry.note!=='string' || entry.note.length>2000)throw new Error('Недопустимый ответ или заметка длиннее 2 000 символов.');clean[id]={state:entry.state,note:entry.note};}
+  return clean;
+}
+function parsePacket(raw){if(typeof raw!=='string' || new Blob([raw]).size>MAX_FILE_BYTES)throw new Error('Копия слишком большая (максимум 2 МБ).');return validatePacket(JSON.parse(raw));}
+function storageProblem(message, raw=null){storageLocked=true;damagedRaw=raw;$('storage-warning').hidden=false;$('storage-message').textContent=message;$('download-damaged').hidden=raw===null;$('recover-storage').hidden=raw===null;$('save-status').textContent='Автосохранение приостановлено · скачайте копию перед закрытием';}
+function load(){
+  let raw;
+  try{raw=localStorage.getItem(STORAGE_KEY);lastStored=raw;}catch(error){storageProblem('Хранилище браузера недоступно. Можно заполнять форму, но ответы останутся только в открытой вкладке. Скачайте JSON перед закрытием.');return;}
+  if(raw!==null){try{answers=parsePacket(raw);}catch(error){storageProblem('Сохранённая копия повреждена или имеет неизвестный формат. Она не изменена. Скачайте исходные данные для восстановления; автосохранение заблокировано до явной замены.',raw);return;}}
+  $('save-status').textContent=raw===null?'Ответов пока нет · автосохранение в этом браузере':'Сохранённая копия восстановлена из этого браузера';
+}
+function save(){
+  if(storageLocked)return false;
+  try{
+    const current=localStorage.getItem(STORAGE_KEY);
+    if(current!==lastStored){storageProblem('Копия изменена в другой вкладке. Чтобы не потерять ни одну версию, скачайте текущие ответы и перезагрузите страницу.');return false;}
+    const raw=JSON.stringify(packet());localStorage.setItem(STORAGE_KEY,raw);
+    if(localStorage.getItem(STORAGE_KEY)!==raw)throw new Error('Не удалось проверить запись');
+    lastStored=raw;$('save-status').textContent='Сохранено в этом браузере · не отправлено на сервер';return true;
+  }catch(error){storageProblem('Браузер не смог сохранить ответы: доступ закрыт или хранилище заполнено. Ответы пока есть в этой вкладке. Скачайте JSON перед закрытием.');return false;}
+}
+window.addEventListener('storage',event=>{if(event.key===STORAGE_KEY || event.key===null){storageProblem('Сохранённая копия изменена в другой вкладке. Скачайте текущие ответы перед перезагрузкой, чтобы ничего не потерять.');}});
+function notify(message){$('notice').textContent=message;}
+function hasAnswers(){return Object.values(answers).some(answer=>answer.state!=='unanswered' || answer.note.length>0);}
+function downloadFile(text, type, name){
+  try{const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const link=element('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);notify('Файл подготовлен. Проверьте загрузки браузера; копия содержит личные записи.');}
+  catch(error){notify('Не удалось подготовить файл. Не закрывайте вкладку. Попробуйте другой браузер или скопируйте записи вручную.');}
+}
+$('export-json').addEventListener('click',()=>downloadFile(JSON.stringify(packet(),null,2),'application/json;charset=utf-8','karta-chuvstv.json'));
+$('export-txt').addEventListener('click',()=>{
+  const lines=['КАРТА ЧУВСТВ','Личная запись. Храните конфиденциально.','Расположение слов сохранено из исходной таблицы; это не диагностика и не научная классификация.',''];
+  let section='',group='';
+  for(const item of items){if(item.section!==section){section=item.section;group='';lines.push('',section,'='.repeat(32));}if(item.group && item.group!==group){group=item.group;lines.push('','['+group+']');}const answer=answers[item.id] || {state:'unanswered',note:''};lines.push(item.name+' — '+labels[answer.state]);if(answer.note)lines.push('  Заметка: '+answer.note.replace(/\n/g,'\n  '));}
+  downloadFile('\uFEFF'+lines.join('\n')+'\n','text/plain;charset=utf-8','karta-chuvstv.txt');
+});
+$('import-json').addEventListener('click',()=>$('import-file').click());
+$('import-file').addEventListener('change',async event=>{
+  const file=event.target.files[0];if(!file)return;
+  $('import-json').disabled=true;
+  try{
+    if(file.size>MAX_FILE_BYTES)throw new Error('Файл больше 2 МБ.');
+    const incoming=parsePacket(await file.text());
+    if(hasAnswers() && !window.confirm('Заменить все текущие ответы и заметки содержимым копии? Сначала скачайте текущую копию, если хотите её сохранить.')){notify('Загрузка отменена. Текущие ответы не изменены.');return;}
+    answers=incoming;updateView();
+    const saved=save();notify(saved?'Копия загружена и сохранена в этом браузере.':'Копия загружена только в эту вкладку. Автосохранение недоступно — скачайте JSON перед закрытием.');
+  }catch(error){notify('Копия не загружена. Текущие ответы не изменены. Проверьте формат JSON, версию 1, полный набор строк и ограничение заметки в 2 000 символов (файл до 2 МБ).');}
+  finally{event.target.value='';$('import-json').disabled=false;}
+});
+$('reset').addEventListener('click',()=>{
+  if(!window.confirm('Очистить все ответы и заметки в этой форме? Это действие нельзя отменить. Скачайте копию заранее.'))return;
+  answers={};updateView();const saved=save();notify(saved?'Ответы и заметки очищены в этой форме и её локальной копии.':'Ответы очищены только в этой вкладке. Старая копия в хранилище не изменена: автосохранение заблокировано.');
+});
+$('download-damaged').addEventListener('click',()=>{if(damagedRaw!==null)downloadFile(damagedRaw,'text/plain;charset=utf-8','karta-chuvstv-original.txt');});
+$('recover-storage').addEventListener('click',()=>{
+  if(damagedRaw===null || !window.confirm('Заменить повреждённую копию текущими ответами из этой вкладки? Старые данные будут потеряны. Перед заменой скачайте исходные данные.'))return;
+  try{if(localStorage.getItem(STORAGE_KEY)!==damagedRaw){storageProblem('Копия в хранилище уже изменилась. Скачайте текущие ответы и перезагрузите страницу.');return;}lastStored=damagedRaw;storageLocked=false;if(save()){damagedRaw=null;$('storage-warning').hidden=true;notify('Повреждённая копия заменена текущими ответами. Автосохранение включено.');}}
+  catch(error){storageProblem('Не удалось заменить копию. Хранилище недоступно. Скачайте текущие ответы перед закрытием.');}
+});
+window.addEventListener('beforeunload',event=>{if(storageLocked && hasAnswers()){event.preventDefault();event.returnValue='';}});
+let printOpen=[];
+window.addEventListener('beforeprint',()=>{printOpen=groupViews.map(view=>view.group.open);groupViews.forEach(view=>view.group.open=true);});
+window.addEventListener('afterprint',()=>groupViews.forEach((view,i)=>{view.group.open=wide.matches || printOpen[i];}));
+load();updateView();
+</script>
+</body>
+</html>
