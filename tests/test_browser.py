@@ -6,7 +6,7 @@ import unittest
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
-os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(ROOT / '.browsers')
+os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', str(ROOT / '.browsers'))
 TARGET_URL = os.environ.get('TEST_BASE_URL', ROOT.joinpath('index.html').as_uri())
 BROWSER = os.environ.get('TEST_BROWSER', 'chromium')
 RESULTS = ROOT / 'test-results' / (BROWSER + ('-http' if TARGET_URL.startswith('http') else '-file'))
