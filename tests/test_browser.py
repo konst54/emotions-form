@@ -11,8 +11,24 @@ TARGET_URL = os.environ.get('TEST_BASE_URL', ROOT.joinpath('index.html').as_uri(
 BROWSER = os.environ.get('TEST_BROWSER', 'chromium')
 RESULTS = ROOT / 'test-results' / (BROWSER + ('-http' if TARGET_URL.startswith('http') else '-file'))
 
+def open_intro(page):
+    """Progress, export/import, save status and the view switch live inside the
+    collapsed intro; expand it before touching any of them."""
+    if not page.evaluate("document.getElementById('intro-collapse').open"):
+        page.locator('#intro-collapse > summary').click()
+
+
+def ensure_cards_view(page):
+    """The table is the default view now; switch to cards for tests that drive
+    the per-word dropdown and note fields directly."""
+    open_intro(page)
+    if page.locator('#cards-view').is_hidden():
+        page.locator('#view-cards').click()
+
+
 def open_group(page, index=0, container='.main-groups'):
     """Groups render collapsed; open one before touching its rows."""
+    ensure_cards_view(page)
     if page.locator(f'{container} > .group').nth(index).get_attribute('open') is None:
         page.locator(f'{container} > .group > summary').nth(index).click()
 
@@ -101,6 +117,7 @@ class FormTests(unittest.TestCase):
         self.assertEqual(self.page.locator('#fears .item-name').all_text_contents(), source['fears'])
 
     def test_05_import_rejection_and_xss(self):
+        open_intro(self.page)
         clean = json.loads(self.download('#export-json'))
         bad_cases = ['{bad', json.dumps(clean) + ' trailing', 'x' * (2 * 1024 * 1024 + 1)]
         for change in [lambda x: x.update(version=2), lambda x: x.update(extra=1),
@@ -128,8 +145,8 @@ class FormTests(unittest.TestCase):
         self.assertEqual(json.loads(self.download('#export-json')), clean)
 
     def test_06_confirmations(self):
-        blank = json.loads(self.download('#export-json'))
         self.open_group()
+        blank = json.loads(self.download('#export-json'))
         self.page.locator('#answer-main-0-0').select_option('remember')
         self.page.once('dialog', lambda dialog: dialog.dismiss())
         self.upload(blank)
@@ -183,6 +200,7 @@ class FormTests(unittest.TestCase):
         for width in [320, 390, 768, 1440]:
             self.page.set_viewport_size({'width': width, 'height': 960})
             self.page.reload()
+            ensure_cards_view(self.page)
             self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'), width)
             self.assertIsNone(self.page.locator('.main-groups > .group').first.get_attribute('open'), width)
             if width < 900:
@@ -200,6 +218,7 @@ class FormTests(unittest.TestCase):
                 self.assertEqual(len(self.page.locator('.main-groups').evaluate('(el)=>getComputedStyle(el).gridTemplateColumns').split()), 5)
             self.page.evaluate('localStorage.clear()')
             self.page.reload()
+            ensure_cards_view(self.page)
             self.page.evaluate('window.scrollTo(0,0)')
             self.page.screenshot(path=str(out / f'layout-{width}.png'), full_page=True)
             if width in [390, 1440]:
@@ -245,21 +264,24 @@ class FormTests(unittest.TestCase):
         self.assertFalse(page.evaluate('document.documentElement.scrollWidth > innerWidth'))
         context.close()
         self.page.set_viewport_size({'width': 390, 'height': 844})
+        ensure_cards_view(self.page)
         summary = self.page.locator('.main-groups > .group > summary').nth(1)
         summary.focus(); self.page.keyboard.press('Enter')
         self.assertTrue(self.page.locator('#answer-main-1-0').is_visible())
         self.page.locator('#answer-main-1-0').focus(); self.page.keyboard.press('ArrowDown')
         self.assertEqual(self.page.locator('#answer-main-1-0').input_value(), 'remember')
 
-    def test_13_compact_intro_and_visible_storage_reminder(self):
+    def test_13_storage_reminder_reachable_behind_collapsed_intro(self):
+        """The disclaimer no longer sits on the first screen (the table does
+        now, see test_19), but it must still exist, intact, once expanded."""
         for width in [320, 390]:
             self.page.set_viewport_size({'width': width, 'height': 844})
+            self.page.evaluate('localStorage.clear()')
             self.page.reload()
-            first_group = self.page.locator('.main-groups > .group > summary').first.bounding_box()
-            self.assertLess(first_group['y'], 844, 'First group header should be within the initial mobile screen')
+            self.assertFalse(self.page.evaluate("document.getElementById('intro-collapse').open"), width)
+            open_intro(self.page)
             reminder = self.page.locator('#storage-reminder')
             expect(reminder).to_be_visible()
-            self.assertLess(reminder.bounding_box()['y'], 400)
             for phrase in ['браузере', 'устройстве', 'удалить', 'JSON']:
                 self.assertIn(phrase, reminder.inner_text())
 
@@ -281,7 +303,7 @@ class FormTests(unittest.TestCase):
         self.page.evaluate("""()=>{const t=document.getElementById('note-main-0-0');
             t.value='a'.repeat(10); t.dispatchEvent(new Event('input'));}""")
         self.assertIn('До 2 000 символов', self.page.locator('#help-main-0-0').text_content())
-        self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 0 из 148')
+        self.assertEqual(self.page.locator('#progress-text').text_content(), 'Отмечено 0 из 148')
 
     def test_15_groups_start_collapsed_and_tally_every_state(self):
         for index in range(5):
@@ -315,15 +337,182 @@ class FormTests(unittest.TestCase):
             document.querySelectorAll('select[data-answer]').forEach(s=>{s.value='remember';s.dispatchEvent(new Event('change'));});
             document.querySelectorAll('textarea[id^=note-]').forEach(t=>{t.value='ы'.repeat(2000);t.dispatchEvent(new Event('input'));});
         }""")
-        self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 148 из 148')
+        open_intro(self.page)
+        self.assertEqual(self.page.locator('#progress-text').text_content(), 'Отмечено 148 из 148')
         raw = self.download('#export-json')
         self.assertLess(len(raw.encode('utf-8')), 2 * 1024 * 1024)
         self.page.once('dialog', lambda dialog: dialog.accept())
         self.page.locator('#reset').click()
-        self.assertEqual(self.page.locator('#progress-text').inner_text(), 'Отмечено 0 из 148')
+        self.assertEqual(self.page.locator('#progress-text').text_content(), 'Отмечено 0 из 148')
         self.upload(raw)
         expect(self.page.locator('#progress-text')).to_have_text('Отмечено 148 из 148')
         self.assertEqual(len(self.page.locator('#note-main-0-0').input_value()), 2000)
+
+    def test_17_table_view_controls_and_persistence(self):
+        open_intro(self.page)
+        self.page.locator('#view-table').click()
+        self.assertTrue(self.page.locator('#table-view').is_visible())
+        self.assertFalse(self.page.locator('#cards-view').is_visible())
+        self.assertEqual(self.page.locator('.cell').count(), 148)
+        cell = self.page.locator('.cell[data-id="main-0-0"]')
+        # plus / minus toggle, and the same answer shows up in the cards view controls
+        cell.locator('.cell-plus').click()
+        self.assertEqual(cell.get_attribute('data-state'), 'remember')
+        self.assertEqual(cell.locator('.cell-plus').get_attribute('aria-pressed'), 'true')
+        self.assertEqual(self.page.locator('#answer-main-0-0').input_value(), 'remember')
+        cell.locator('.cell-plus').click()
+        self.assertEqual(cell.get_attribute('data-state'), 'unanswered')
+        cell.locator('.cell-minus').click()
+        self.assertEqual(cell.get_attribute('data-state'), 'not-yet')
+        self.assertEqual(cell.locator('.cell-minus').get_attribute('aria-pressed'), 'true')
+        self.assertEqual(cell.locator('.cell-plus').get_attribute('aria-pressed'), 'false')
+        # header tallies follow
+        header = self.page.locator('#table-grid .hcell').first
+        self.assertEqual(header.locator('.tally').all_text_contents(), ['0 вспоминаю', '1 пока нет', '15 без ответа'])
+        # note through the sheet
+        self.assertEqual(cell.locator('.cell-note').get_attribute('data-has-note'), 'false')
+        cell.locator('.cell-note').click()
+        expect(self.page.locator('#note-sheet')).to_be_visible()
+        self.assertEqual(self.page.locator('#sheet-title').inner_text(), 'Бешенство')
+        self.assertEqual(self.page.evaluate('document.activeElement.id'), 'sheet-note')
+        self.page.keyboard.type('Табличная заметка')
+        self.assertEqual(self.page.locator('#note-main-0-0').input_value(), 'Табличная заметка')
+        self.page.keyboard.press('Escape')
+        expect(self.page.locator('#note-sheet')).to_be_hidden()
+        self.assertEqual(self.page.evaluate('document.activeElement.className'), 'cell-btn cell-note')
+        self.assertEqual(cell.locator('.cell-note').get_attribute('data-has-note'), 'true')
+        self.assertIn('есть запись', cell.locator('.cell-note').get_attribute('aria-label'))
+        # everything is in the one stored packet, and the chosen view survives a reload
+        self.page.reload()
+        self.assertTrue(self.page.locator('#table-view').is_visible())
+        self.assertEqual(self.page.locator('#view-table').get_attribute('aria-pressed'), 'true')
+        self.assertEqual(cell.get_attribute('data-state'), 'not-yet')
+        self.assertEqual(cell.locator('.cell-note').get_attribute('data-has-note'), 'true')
+        exported = json.loads(self.download('#export-json'))
+        self.assertEqual(exported['answers']['main-0-0'], {'state': 'not-yet', 'note': 'Табличная заметка'})
+        self.assertNotIn('view', exported)
+        # keyboard: the cell buttons are ordinary buttons
+        cell.locator('.cell-plus').focus(); self.page.keyboard.press('Enter')
+        self.assertEqual(cell.get_attribute('data-state'), 'remember')
+        self.page.locator('#view-cards').click()
+        self.assertTrue(self.page.locator('#cards-view').is_visible())
+        self.page.reload()
+        self.assertTrue(self.page.locator('#cards-view').is_visible())
+
+    def test_18_table_view_per_screen(self):
+        """Narrow screens: the whole feelings block fits one screen above the fixed bar and a tap only selects;
+        wide screens: three buttons per cell and no horizontal scroll."""
+        MAIN_BLOCK = """()=>{const cells=[...document.querySelectorAll('#table-grid .cell, #table-grid .cell-empty')].filter(c=>parseInt(c.style.gridRow)<=23);
+            const top=document.querySelector('#table-view .section-heading').getBoundingClientRect().top;
+            return Math.round(Math.max(...cells.map(c=>c.getBoundingClientRect().bottom))-top);}"""
+        for width, height in [(360, 700), (390, 664), (844, 390), (1024, 768), (1440, 1000)]:
+            self.page.set_viewport_size({'width': width, 'height': height})
+            self.page.reload()
+            self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'), (width, height))
+            self.assertFalse(self.page.evaluate("()=>{const s=document.getElementById('table-scroll');return s.scrollWidth>s.clientWidth+1;}"), (width, height))
+            self.assertEqual(self.page.locator('#table-grid .hcell').count(), 10)
+            compact = width < 900
+            self.assertEqual(self.page.locator('#table-bar').is_visible(), compact, (width, height))
+            self.assertEqual(self.page.locator('.cell[data-id="main-1-0"] .cell-minus').is_visible(), not compact, (width, height))
+            if compact:
+                if width < 400:  # phone portrait: the zoom controls and the header row land on the first screen
+                    self.assertLess(self.page.locator('#table-grid .hcell').first.bounding_box()['y'], 60)
+                self.page.locator('.cell[data-id="main-1-6"] .cell-pick').click()
+                self.assertEqual(self.page.locator('.cell[data-id="main-1-6"]').get_attribute('data-state'), 'unanswered')
+                self.assertEqual(self.page.locator('#bar-word').inner_text(), 'Ошарашенность')
+                self.page.locator('#bar-plus').click()
+                self.assertEqual(self.page.locator('.cell[data-id="main-1-6"]').get_attribute('data-state'), 'remember')
+                self.assertEqual(self.page.locator('#answer-main-1-6').input_value(), 'remember')
+                self.page.locator('#bar-note').click()
+                expect(self.page.locator('#note-sheet')).to_be_visible()
+                self.page.keyboard.type('из панели'); self.page.keyboard.press('Escape')
+                self.assertEqual(self.page.locator('#bar-note').get_attribute('data-has-note'), 'true')
+                self.assertEqual(self.page.evaluate('document.activeElement.id'), 'bar-note')
+                for selector in ['#bar-minus', '#bar-plus', '#bar-note']:
+                    box = self.page.locator(selector).bounding_box()
+                    self.assertGreaterEqual(min(box['width'], box['height']), 44, (width, selector))
+                self.assertEqual(self.page.locator('#table-grid .hcell').nth(1).locator('.tally').all_text_contents(),
+                                 ['1 вспоминаю', '0 пока нет', '20 без ответа'])
+                # note dot on the cell itself, and a clearly different fill for + and -
+                self.assertEqual(self.page.locator('.cell[data-id="main-1-6"]').get_attribute('data-has-note'), 'true')
+                plus_bg = self.page.locator('.cell[data-id="main-1-6"]').evaluate('el=>getComputedStyle(el).backgroundColor')
+                self.page.locator('.cell[data-id="main-1-7"] .cell-pick').click(); self.page.locator('#bar-minus').click()
+                minus_bg = self.page.locator('.cell[data-id="main-1-7"]').evaluate('el=>getComputedStyle(el).backgroundColor')
+                self.assertNotEqual(plus_bg, minus_bg)
+                # zoom: the smallest step puts the entire table on one screen above the bar; the choice is remembered
+                WHOLE = """()=>{const top=document.querySelector('#table-view .section-heading').getBoundingClientRect().top;
+                    const bottom=Math.max(...[...document.querySelectorAll('#table-grid > *')].map(c=>c.getBoundingClientRect().bottom));
+                    return Math.round(bottom-top);}"""
+                budget = self.page.evaluate("innerHeight - document.getElementById('table-bar').getBoundingClientRect().height")
+                if width < 400:
+                    self.assertLessEqual(self.page.evaluate(MAIN_BLOCK), budget, (width, height, 'default zoom: feelings block'))
+                while not self.page.locator('#zoom-out').is_disabled():
+                    self.page.locator('#zoom-out').click()
+                if width < 400:
+                    self.assertLessEqual(self.page.evaluate(WHOLE), budget, (width, height, 'smallest zoom: whole table'))
+                self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'))
+                small = self.page.evaluate("getComputedStyle(document.querySelector('.cell-pick')).fontSize")
+                self.page.reload()
+                self.assertEqual(self.page.evaluate("getComputedStyle(document.querySelector('.cell-pick')).fontSize"), small)
+                self.page.locator('#zoom-in').click(); self.page.locator('#zoom-in').click()
+                self.assertGreater(float(self.page.evaluate("parseFloat(getComputedStyle(document.querySelector('.cell-pick')).fontSize)")), float(small[:-2]))
+            else:
+                box = self.page.locator('.cell[data-id="main-1-0"] .cell-minus').bounding_box()
+                self.assertGreaterEqual(min(box['width'], box['height']), 40, (width, height))
+            self.page.evaluate('localStorage.clear()')
+
+    def test_19_table_and_smallest_zoom_are_default_intro_collapses(self):
+        """Fresh load, no stored preferences: the table is what's immediately
+        visible, already at its smallest zoom step, with the headline,
+        instructions and export tucked behind a collapsed summary. Storage
+        warnings are never hidden behind it, and an explicit choice (view,
+        zoom or the intro itself) survives a reload."""
+        self.page.set_viewport_size({'width': 390, 'height': 664})
+        self.page.evaluate('localStorage.clear()')
+        self.page.reload()
+        self.assertFalse(self.page.evaluate("document.getElementById('intro-collapse').open"))
+        self.assertTrue(self.page.locator('#table-view').is_visible())
+        self.assertTrue(self.page.locator('#cards-view').is_hidden())
+        self.assertEqual(self.page.locator('#view-table').get_attribute('aria-pressed'), 'true')
+        self.assertTrue(self.page.locator('#zoom-out').is_disabled(), 'already at the smallest step')
+        self.assertLess(self.page.locator('#table-grid .hcell').first.bounding_box()['y'], 60)
+        # +/- read as plain words, on the mobile bar and (checked separately below) on desktop
+        self.assertEqual(self.page.locator('#bar-minus').inner_text(), 'Не помню')
+        self.assertEqual(self.page.locator('#bar-plus').inner_text(), 'Помню')
+
+        # a corrupted copy still warns immediately, intro collapsed or not
+        self.page.evaluate("(raw)=>localStorage.setItem('emotions-form:v1', raw)", '{broken')
+        self.page.reload()
+        self.assertFalse(self.page.evaluate("document.getElementById('intro-collapse').open"))
+        self.assertTrue(self.page.locator('#storage-warning').is_visible())
+        self.page.evaluate('localStorage.clear()')
+        self.page.reload()
+
+        # expanding the intro reaches cards; a quick link in cards leads straight back
+        open_intro(self.page)
+        self.assertTrue(self.page.locator('#export-json').is_visible())
+        self.page.locator('#view-cards').click()
+        self.assertTrue(self.page.locator('#cards-view').is_visible())
+        self.page.locator('#cards-to-table').click()
+        self.assertTrue(self.page.locator('#table-view').is_visible())
+
+        # explicit choices (intro expanded, zoom raised) persist across a reload
+        self.page.locator('#intro-collapse > summary').click()  # collapse it again
+        self.assertFalse(self.page.evaluate("document.getElementById('intro-collapse').open"))
+        self.page.locator('#intro-collapse > summary').click()  # and re-expand: this is the stored choice
+        self.page.locator('#zoom-in').click()
+        self.page.reload()
+        self.assertTrue(self.page.evaluate("document.getElementById('intro-collapse').open"))
+        self.assertFalse(self.page.locator('#zoom-out').is_disabled())
+
+    def test_20_wide_cells_use_plain_words_not_symbols(self):
+        cell = self.page.locator('.cell[data-id="main-0-0"]')
+        self.assertEqual(cell.locator('.cell-minus').inner_text(), 'Не помню')
+        self.assertEqual(cell.locator('.cell-plus').inner_text(), 'Помню')
+        self.assertEqual(cell.locator('.cell-plus').get_attribute('aria-label'), 'Помню: Бешенство')
+        self.assertEqual(cell.locator('.cell-minus').get_attribute('aria-label'), 'Не помню: Бешенство')
+        self.assertNotIn('+', cell.locator('.cell-plus').inner_text())
+        self.assertNotIn('−', cell.locator('.cell-minus').inner_text())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
