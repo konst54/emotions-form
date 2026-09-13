@@ -68,6 +68,7 @@ const TALLY_ORDER = ['remember','not-yet','unanswered'];
 const items = [];
 const controls = new Map();
 const groupViews = [];
+let currentColumns=5;let tableTallies=[];
 let answers = {};
 const $ = id => document.getElementById(id);
 function element(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
@@ -91,6 +92,7 @@ function makeItem(name, id, section, group) {
 function noteHint(length){return length>NOTE_MAX-400?'Осталось '+(NOTE_MAX-length)+' из 2 000 символов.':'До 2 000 символов. Только для вас.';}
 function attachPasteGuard(text,report){text.addEventListener('paste',event=>{const clip=event.clipboardData;if(!clip)return;const pasted=clip.getData('text');if(!pasted)return;if(text.value.length-(text.selectionEnd-text.selectionStart)+pasted.length>NOTE_MAX)report('Вставка обрезана: в заметке не больше 2 000 символов.');});}
 function makeTallies(){const count=element('span',undefined,'group-count');const tallies={};TALLY_ORDER.forEach(state=>{const chip=element('span',undefined,'tally');chip.dataset.state=state;const num=element('span','0','tally-num');chip.append(num,' ',element('span',labels[state].toLowerCase(),'tally-label'));count.append(chip);tallies[state]=num;});return {count,tallies};}
+function makeHeaderCell(catIndex,minor){const h=element('div',undefined,minor?'hcell hcell-minor tcol':'hcell tcol');h.dataset.column=catIndex;h.append(element('span',SOURCE.groups[catIndex],'hcell-title'));const {count,tallies}=makeTallies();h.append(count);return {h,tallies};}
 function makeGroup(names, index, section, prefix, parent) {
   const group=element('details',undefined,'group');group.dataset.column=index;
   const summary=element('summary');const head=element('span',undefined,'group-head');const title=element('span',SOURCE.groups[index],'group-title');
@@ -108,7 +110,7 @@ function updateView(){
   for(const item of items){const answer=answers[item.id] || {state:'unanswered',note:''};const view=controls.get(item.id);view.select.value=answer.state;view.text.value=answer.note;view.row.dataset.state=answer.state;view.summary.textContent=answer.note?'Заметка · есть запись':'Заметка';view.printed.textContent=answer.note;view.help.textContent=noteHint(answer.note.length);setAttr(view.plus,'aria-pressed',String(answer.state==='remember'));setAttr(view.minus,'aria-pressed',String(answer.state==='not-yet'));view.cell.dataset.state=answer.state;view.cell.dataset.hasNote=view.noteBtn.dataset.hasNote=answer.note?'true':'false';setAttr(view.noteBtn,'aria-label',(answer.note?'Заметка, есть запись: ':'Заметка: ')+item.name);if(answer.state!=='unanswered')completed++;}
   $('progress').max=items.length;$('progress').value=completed;$('progress-text').textContent='Отмечено '+completed+' из '+items.length;
   refreshBar();
-  groupViews.forEach(({ids,tallies})=>{TALLY_ORDER.forEach(state=>{const text=ids.filter(id=>(answers[id]?answers[id].state:'unanswered')===state).length;tallies.forEach(set=>{set[state].textContent=String(text);});});});
+  groupViews.forEach(({ids,tallies},i)=>{TALLY_ORDER.forEach(state=>{const text=String(ids.filter(id=>(answers[id]?answers[id].state:'unanswered')===state).length);tallies.forEach(set=>{set[state].textContent=text;});if(tableTallies[i])tableTallies[i][state].textContent=text;});});
 }
 function setAttr(node,name,value){if(node.getAttribute(name)!==value)node.setAttribute(name,value);}
 function currentAnswer(id){return answers[id] || {state:'unanswered',note:''};}
@@ -131,16 +133,35 @@ function makeCell(id,column){
   minus.addEventListener('click',()=>toggleState(id,'not-yet'));plus.addEventListener('click',()=>toggleState(id,'remember'));noteBtn.addEventListener('click',()=>openSheet(id,noteBtn));pick.addEventListener('click',()=>selectCell(id));
   Object.assign(view,{cell,pick,minus,plus,noteBtn});return cell;
 }
-function buildTable(){
-  const grid=$('table-grid');
-  const place=(node,row,col,full)=>{node.style.gridRow=row;node.style.gridColumn=full?'1 / -1':col;grid.append(node);};
-  const header=(row,minor,offset)=>{SOURCE.groups.forEach((name,c)=>{const h=element('div',undefined,minor?'hcell hcell-minor tcol':'hcell tcol');h.dataset.column=c;h.append(element('span',name,'hcell-title'));const {count,tallies}=makeTallies();h.append(count);groupViews[offset+c].tallies.push(tallies);place(h,row,c+1);});};
-  const block=(prefix,columns,start)=>{const rows=Math.max(...columns.map(names=>names.length));columns.forEach((names,c)=>{for(let i=0;i<rows;i++){const node=i<names.length?makeCell(prefix+'-'+c+'-'+i,c):element('div',undefined,'cell-empty tcol');node.dataset.column=c;place(node,start+i,c+1);}});return start+rows;};
-  header(1,false,0);let row=block('main',SOURCE.main,2);
-  place(element('div',$('thoughts-title').textContent,'table-sep'),row++,1,true);header(row++,true,SOURCE.main.length);row=block('thought',SOURCE.thoughts,row);
-  place(element('div','Страхи','table-sep'),row++,1,true);SOURCE.fears.forEach((name,i)=>place(makeCell('fear-'+i,null),row+Math.floor(i/5),(i%5)+1));
+// A "band" is up to currentColumns categories shown side by side, each with its own header row above it.
+// At currentColumns=5 this is one band (today's full-width layout); at 1-3 it wraps into several bands stacked
+// vertically, which is how bigger zoom steps stay readable without forcing a category to squeeze narrower.
+function layoutBand(place,prefix,wordLists,tallyBase,minor,startRow){
+  const N=currentColumns;let row=startRow;
+  for(let bandStart=0;bandStart<5;bandStart+=N){
+    const cats=[];for(let c=bandStart;c<Math.min(bandStart+N,5);c++)cats.push(c);
+    cats.forEach((c,i)=>{const {h,tallies}=makeHeaderCell(c,minor);tableTallies[tallyBase+c]=tallies;place(h,row,i+1);});
+    row++;
+    const rows=Math.max(...cats.map(c=>wordLists[c].length));
+    for(let r=0;r<rows;r++){cats.forEach((c,i)=>{const names=wordLists[c];const node=r<names.length?makeCell(prefix+'-'+c+'-'+r,c):element('div',undefined,'cell-empty tcol');node.dataset.column=c;place(node,row,i+1);});row++;}
+  }
+  return row;
 }
-buildTable();
+function layoutFears(place,startRow){
+  const N=currentColumns;
+  SOURCE.fears.forEach((name,i)=>place(makeCell('fear-'+i,null),startRow+Math.floor(i/N),(i%N)+1));
+  return startRow+Math.ceil(SOURCE.fears.length/N);
+}
+function layoutTable(){
+  const grid=$('table-grid');grid.replaceChildren();tableTallies=[];
+  const place=(node,row,col,full)=>{node.style.gridRow=row;node.style.gridColumn=full?'1 / -1':col;grid.append(node);};
+  let row=layoutBand(place,'main',SOURCE.main,0,false,1);
+  place(element('div',$('thoughts-title').textContent,'table-sep'),row++,1,true);
+  row=layoutBand(place,'thought',SOURCE.thoughts,5,true,row);
+  place(element('div','Страхи','table-sep'),row++,1,true);
+  layoutFears(place,row);
+}
+layoutTable();
 const STORAGE_KEY='emotions-form:v1';
 const MAX_FILE_BYTES=2*1024*1024;
 let lastStored=null;
@@ -231,16 +252,25 @@ function selectCell(id){if(selectedId!==null){const prev=controls.get(selectedId
 $('bar-minus').addEventListener('click',()=>{if(selectedId!==null)toggleState(selectedId,'not-yet');});
 $('bar-plus').addEventListener('click',()=>{if(selectedId!==null)toggleState(selectedId,'remember');});
 $('bar-note').addEventListener('click',()=>{if(selectedId!==null)openSheet(selectedId,$('bar-note'));});
-// Zoom steps for the compact grid: [font px, row px, padding px, weight]. Step 0 puts the whole table on a phone screen.
-const ZOOM_LEVELS=[[7,12,1,500],[8,16,1,500],[9,19,2,600],[10.5,24,2,600],[12,28,3,600],[14,34,4,600]];
+// Zoom steps for the compact grid: [font px, row px, padding px, weight, columns per band]. Step 0 puts the whole
+// table on a phone screen. Past a point, growing the font inside 5 columns stops being legible, so later steps
+// also shrink the number of categories shown side by side -- 3, then 2, then 1 -- wrapping the rest into bands
+// stacked below instead. The interaction (tap a word, use the bar) stays identical at every step.
+const ZOOM_LEVELS=[[7,12,1,500,5],[8,16,1,500,5],[9,19,2,600,5],[10.5,24,2,600,5],[12,28,3,600,5],[13,32,4,600,3],[15,40,5,650,2],[18,50,6,650,1]];
 const ZOOM_KEY='emotions-form:zoom';
 let zoom=null;try{const stored=parseInt(localStorage.getItem(ZOOM_KEY),10);if(stored>=0&&stored<ZOOM_LEVELS.length)zoom=stored;}catch(error){}
 function zoomLevel(){return zoom===null?0:zoom;}
-function applyZoom(){const level=zoomLevel();const [font,row,pad,weight]=ZOOM_LEVELS[level];const view=$('table-view').style;view.setProperty('--cell-font',font+'px');view.setProperty('--cell-row',row+'px');view.setProperty('--cell-pad',pad+'px');view.setProperty('--cell-weight',String(weight));$('zoom-out').disabled=level<=0;$('zoom-in').disabled=level>=ZOOM_LEVELS.length-1;}
+function setColumns(n){
+  const changed=n!==currentColumns;currentColumns=n;
+  if(changed){selectedId=null;layoutTable();}
+  $('table-grid').style.gridTemplateColumns=isCompact()?'repeat('+n+',minmax(0,1fr))':'';
+  if(changed){updateView();fitTable();}
+}
+function applyZoom(){const level=zoomLevel();const [font,row,pad,weight,columns]=ZOOM_LEVELS[level];const view=$('table-view').style;view.setProperty('--cell-font',font+'px');view.setProperty('--cell-row',row+'px');view.setProperty('--cell-pad',pad+'px');view.setProperty('--cell-weight',String(weight));$('zoom-out').disabled=level<=0;$('zoom-in').disabled=level>=ZOOM_LEVELS.length-1;setColumns(columns);}
 function setZoom(delta){zoom=Math.min(ZOOM_LEVELS.length-1,Math.max(0,zoomLevel()+delta));try{localStorage.setItem(ZOOM_KEY,String(zoom));}catch(error){}applyZoom();}
 $('zoom-out').addEventListener('click',()=>setZoom(-1));$('zoom-in').addEventListener('click',()=>setZoom(1));
 function isCompact(){return window.matchMedia('(max-width:899px)').matches;}
-function applyCompact(){const table=!$('table-view').hidden;const compact=table&&isCompact();$('table-view').classList.toggle('compact',compact);$('table-bar').hidden=!compact;document.body.classList.toggle('has-bar',compact);if(compact)applyZoom();}
+function applyCompact(){const table=!$('table-view').hidden;const compact=table&&isCompact();$('table-view').classList.toggle('compact',compact);$('table-bar').hidden=!compact;document.body.classList.toggle('has-bar',compact);if(compact)applyZoom();else setColumns(5);}
 function scrollToTable(){if(!isCompact())return;const top=$('table-view').querySelector('.section-heading').getBoundingClientRect().top+window.scrollY-4;window.scrollTo(0,Math.max(0,top));}
 $('table-to-cards').addEventListener('click',()=>{setView('cards',true);$('view-cards').scrollIntoView({block:'center'});});
 $('cards-to-table').addEventListener('click',()=>setView('table',true));

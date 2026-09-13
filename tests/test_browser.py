@@ -514,5 +514,51 @@ class FormTests(unittest.TestCase):
         self.assertNotIn('+', cell.locator('.cell-plus').inner_text())
         self.assertNotIn('−', cell.locator('.cell-minus').inner_text())
 
+    def test_21_zoom_reflows_columns_past_five_across(self):
+        """Beyond the point where 5 columns of bigger text would overflow, extra
+        zoom steps shrink the number of categories shown side by side instead --
+        3, then 2, then 1 -- wrapping the remaining categories into bands below.
+        The interaction and the underlying answers stay identical throughout."""
+        self.page.set_viewport_size({'width': 390, 'height': 844})
+        self.page.reload()
+        cols = lambda: len(self.page.evaluate(
+            "getComputedStyle(document.getElementById('table-grid')).gridTemplateColumns.split(' ')"))
+        expected = [5, 5, 5, 5, 5, 3, 2, 1]
+        for level, want in enumerate(expected):
+            self.assertEqual(cols(), want, level)
+            self.assertEqual(self.page.locator('#table-grid .cell').count(), 148, level)
+            self.assertEqual(self.page.locator('#table-grid .hcell').count(), 10, level)
+            self.assertFalse(self.page.evaluate('document.documentElement.scrollWidth > innerWidth'), level)
+            if level < len(expected) - 1:
+                self.page.locator('#zoom-in').click()
+        self.assertTrue(self.page.locator('#zoom-in').is_disabled())
+
+        # a category's tally is correct wherever its header currently sits, one column per row
+        cell = self.page.locator('.cell[data-id="main-4-3"]')
+        cell.locator('.cell-pick').click()
+        self.page.locator('#bar-minus').click()
+        self.assertEqual(self.page.locator('#table-grid .hcell[data-column="4"]').first.locator('.tally').all_text_contents(),
+                         ['0 вспоминаю', '1 пока нет', '21 без ответа'])
+        self.assertEqual(self.page.locator('#answer-main-4-3').input_value(), 'not-yet')
+
+        # reflowing never leaves a stale selection highlighted on the rebuilt grid
+        self.page.locator('#zoom-out').click()
+        self.assertEqual(self.page.locator('.cell.selected').count(), 0)
+
+        # a fresh reload keeps the chosen (reflowed) step
+        self.page.reload()
+        self.assertEqual(cols(), 2)
+        self.assertEqual(self.page.locator('.cell[data-id="main-4-3"]').get_attribute('data-state'), 'not-yet')
+
+        # going wide always shows all 5 columns with per-cell buttons regardless of the stored zoom step;
+        # coming back to a narrow screen restores it
+        COLS_JS = "getComputedStyle(document.getElementById('table-grid')).gridTemplateColumns.split(' ').length"
+        self.page.set_viewport_size({'width': 1440, 'height': 1000})
+        self.page.wait_for_function(f'({COLS_JS}) === 5')
+        self.assertTrue(self.page.locator('.zoom').first.is_hidden())
+        self.assertTrue(self.page.locator('.cell[data-id="main-0-0"] .cell-minus').is_visible())
+        self.page.set_viewport_size({'width': 390, 'height': 844})
+        self.page.wait_for_function(f'({COLS_JS}) === 2')
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
