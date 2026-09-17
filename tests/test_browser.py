@@ -117,17 +117,16 @@ class FormTests(unittest.TestCase):
         self.assertEqual(self.page.locator('#fears .item-name').all_text_contents(), source['fears'])
 
     def test_05_import_rejection_and_xss(self):
+        """Only genuinely unreadable input is rejected outright: broken JSON, a
+        truncated/padded file, an oversized file, an unrecognized app or
+        version, or an answers field that isn't an object at all."""
         open_intro(self.page)
         clean = json.loads(self.download('#export-json'))
         bad_cases = ['{bad', json.dumps(clean) + ' trailing', 'x' * (2 * 1024 * 1024 + 1)]
-        for change in [lambda x: x.update(version=2), lambda x: x.update(extra=1),
-                       lambda x: x['answers'].update(unknown={'state': 'remember', 'note': ''}),
-                       lambda x: x['answers'].pop('main-0-0'),
-                       lambda x: x['answers']['main-0-0'].update(state='bad'),
-                       lambda x: x['answers']['main-0-0'].update(state=['remember']),
-                       lambda x: x['answers']['main-0-0'].update(note=12),
-                       lambda x: x['answers']['main-0-0'].update(note='x' * 2001),
-                       lambda x: x['answers']['main-0-0'].update(extra='bad')]:
+        for change in [lambda x: x.update(version=2), lambda x: x.update(app='other-app'),
+                       lambda x: x.update(app=None), lambda x: x.__setitem__('answers', []),
+                       lambda x: x.__setitem__('answers', 'not-an-object'),
+                       lambda x: x.__setitem__('answers', None)]:
             case = json.loads(json.dumps(clean)); change(case); bad_cases.append(case)
         for case in bad_cases:
             self.page.locator('#notice').evaluate('(el)=>el.textContent=""')
@@ -559,6 +558,93 @@ class FormTests(unittest.TestCase):
         self.assertTrue(self.page.locator('.cell[data-id="main-0-0"] .cell-minus').is_visible())
         self.page.set_viewport_size({'width': 390, 'height': 844})
         self.page.wait_for_function(f'({COLS_JS}) === 2')
+
+    def test_22_import_repairs_schema_drift_instead_of_rejecting(self):
+        """A well-formed packet that no longer matches this form exactly -- a
+        stray top-level field, an unknown answer id, a bad state, a
+        wrong-typed field, an over-length note, an extra field on one entry
+        -- is repaired field by field rather than rejected outright. This is
+        what keeps a deploy that renames or drops a word from costing every
+        other answer: only the affected field resets, everything else survives."""
+        open_intro(self.page)
+        self.page.on('dialog', lambda dialog: dialog.accept())  # this test replaces an existing answer repeatedly
+        clean = json.loads(self.download('#export-json'))
+        clean['answers']['main-0-1'] = {'state': 'not-yet', 'note': 'соседний ответ цел'}
+
+        case = json.loads(json.dumps(clean))
+        case['exportedAt'] = '2020-01-01'  # unknown top-level field: ignored
+        self.upload(case)
+        expect(self.page.locator('#answer-main-0-1')).to_have_value('not-yet')
+        self.assertNotIn('не загружена', self.page.locator('#notice').text_content())
+
+        case = json.loads(json.dumps(clean))
+        case['answers']['ghost-9-9'] = {'state': 'remember', 'note': ''}  # id from a retired word
+        self.upload(case)
+        expect(self.page.locator('#answer-main-0-1')).to_have_value('not-yet')
+        expect(self.page.locator('#notice')).to_contain_text('не совпала')
+
+        case = json.loads(json.dumps(clean))
+        del case['answers']['main-0-0']  # id missing entirely -- just starts blank
+        self.upload(case)
+        expect(self.page.locator('#answer-main-0-0')).to_have_value('unanswered')
+        expect(self.page.locator('#answer-main-0-1')).to_have_value('not-yet')
+        expect(self.page.locator('#notice')).to_contain_text('не совпала')
+
+        for mutate, expect_state, expect_note, expect_repaired in [
+            (lambda e: e.update(state='bad'), 'unanswered', 'соседний ответ цел', True),
+            (lambda e: e.update(state=['remember']), 'unanswered', 'соседний ответ цел', True),
+            (lambda e: e.update(note=12), 'not-yet', '', True),
+            # an unknown field on an otherwise-valid entry needs no repair -- state and note are untouched
+            (lambda e: e.update(extra='bad'), 'not-yet', 'соседний ответ цел', False),
+        ]:
+            case = json.loads(json.dumps(clean))
+            mutate(case['answers']['main-0-1'])
+            self.upload(case)
+            expect(self.page.locator('#answer-main-0-1')).to_have_value(expect_state)
+            expect(self.page.locator('#note-main-0-1')).to_have_value(expect_note)
+            if expect_repaired:
+                expect(self.page.locator('#notice')).to_contain_text('не совпала')
+            else:
+                self.assertNotIn('не совпала', self.page.locator('#notice').text_content())
+
+        case = json.loads(json.dumps(clean))
+        case['answers']['main-0-1']['note'] = 'a' * 2500
+        self.upload(case)
+        expect(self.page.locator('#answer-main-0-1')).to_have_value('not-yet')
+        expect(self.page.locator('#note-main-0-1')).to_have_value('a' * 2000)
+
+    def test_23_word_list_drift_across_a_deploy_does_not_reset_other_answers(self):
+        """Simulates the scenario this exists for: a deploy changes the word
+        list (a rename, drop or addition changes item ids) while a user's
+        saved copy from before that deploy is still sitting in their
+        browser. Reloading must not lock autosave or wipe answers for words
+        that still exist -- only the ones that genuinely no longer do."""
+        self.open_group()
+        self.page.locator('#answer-main-0-0').select_option('remember')
+        self.page.locator('#answer-main-0-1').select_option('not-yet')
+        self.page.locator('[data-id="main-0-1"] .note > summary').click()
+        self.page.locator('#note-main-0-1').fill('переживает соседнее слово')
+        raw = json.loads(self.page.evaluate("localStorage.getItem('emotions-form:v1')"))
+        # simulate a deploy: main-0-0's word was renamed/removed (id gone), and a stray id from
+        # a word that no longer exists anywhere in the form is still sitting in the old copy
+        del raw['answers']['main-0-0']
+        raw['answers']['main-9-9'] = {'state': 'remember', 'note': 'слово, которого больше нет'}
+        self.page.evaluate("(r)=>localStorage.setItem('emotions-form:v1', JSON.stringify(r))", raw)
+
+        self.page.reload()
+        self.assertFalse(self.page.locator('#storage-warning').is_visible(), 'a schema drift must not lock autosave')
+        self.open_group()  # cards view is restored from storage, but group-open state never persists
+        expect(self.page.locator('#notice')).to_contain_text('не совпала')
+        self.assertEqual(self.page.locator('#answer-main-0-0').input_value(), 'unanswered')
+        self.assertEqual(self.page.locator('#answer-main-0-1').input_value(), 'not-yet')
+        self.assertEqual(self.page.locator('#note-main-0-1').input_value(), 'переживает соседнее слово')
+
+        # autosave still works normally afterwards, and the repaired shape is what's now stored
+        self.page.locator('#answer-main-0-2').select_option('remember')
+        stored = json.loads(self.page.evaluate("localStorage.getItem('emotions-form:v1')"))
+        self.assertEqual(stored['answers']['main-0-2']['state'], 'remember')
+        self.assertNotIn('main-9-9', stored['answers'])
+        self.assertIn('main-0-0', stored['answers'])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
