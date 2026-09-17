@@ -167,20 +167,42 @@ let lastStored=null;
 let storageLocked=false;
 let damagedRaw=null;
 function packet(){const full={};items.forEach(({id})=>{full[id]=answers[id] || {state:'unanswered',note:''};});return {app:'emotions-form',version:1,answers:full};}
-function exactKeys(value, keys){return value!==null && typeof value==='object' && !Array.isArray(value) && Object.keys(value).length===keys.length && keys.every(key=>Object.hasOwn(value,key));}
+function isPlainObject(value){return value!==null && typeof value==='object' && !Array.isArray(value);}
+// A saved or imported packet may come from an earlier version of this form -- a word renamed, added or removed
+// changes item ids, and a deploy must never turn that into lost answers. Repair per field instead of rejecting the
+// whole packet: an id that no longer exists is dropped, one that's new starts blank, and within one entry a bad
+// note doesn't cost a good state or vice versa. `changed` says whether anything actually needed repairing, so the
+// caller can mention it once instead of staying silent about a reset that isn't obvious from the UI alone.
+function migrateAnswers(rawAnswers){
+  const clean={};let changed=false;
+  for(const {id} of items){
+    const entry=rawAnswers[id];let state='unanswered',note='',broken=!isPlainObject(entry);
+    if(!broken){
+      if(typeof entry.state==='string' && Object.hasOwn(labels,entry.state))state=entry.state;else broken=true;
+      if(typeof entry.note==='string'){note=entry.note.slice(0,NOTE_MAX);if(entry.note.length>NOTE_MAX)broken=true;}else broken=true;
+    }
+    if(broken)changed=true;
+    clean[id]={state,note};
+  }
+  if(!changed)for(const key in rawAnswers){if(!controls.has(key) && isPlainObject(rawAnswers[key]) && rawAnswers[key].state!=='unanswered'){changed=true;break;}}
+  return {clean,changed};
+}
 function validatePacket(value){
-  if(!exactKeys(value,['app','version','answers']) || value.app!=='emotions-form' || value.version!==1)throw new Error('Неподдерживаемый формат или версия копии.');
-  if(!exactKeys(value.answers,items.map(item=>item.id)))throw new Error('Набор строк в копии не соответствует этой форме.');
-  const clean={};
-  for(const {id} of items){const entry=value.answers[id];if(!exactKeys(entry,['state','note']) || !Object.hasOwn(labels,entry.state) || typeof entry.state!=='string' || typeof entry.note!=='string' || entry.note.length>NOTE_MAX)throw new Error('Недопустимый ответ или заметка длиннее 2 000 символов.');clean[id]={state:entry.state,note:entry.note};}
-  return clean;
+  // version is a hard gate on purpose: there is only ever one shape (version 1) today. A future breaking schema
+  // change should add real migration here rather than widen this check, since we can't safely guess a new shape.
+  if(!isPlainObject(value) || value.app!=='emotions-form' || value.version!==1)throw new Error('Неподдерживаемый формат или версия копии.');
+  if(!isPlainObject(value.answers))throw new Error('Копия повреждена: нет данных ответов.');
+  return migrateAnswers(value.answers);
 }
 function parsePacket(raw){if(typeof raw!=='string' || new Blob([raw]).size>MAX_FILE_BYTES)throw new Error('Копия слишком большая (максимум 2 МБ).');return validatePacket(JSON.parse(raw));}
 function storageProblem(message, raw=null){storageLocked=true;damagedRaw=raw;$('storage-warning').hidden=false;$('storage-message').textContent=message;$('download-damaged').hidden=raw===null;$('recover-storage').hidden=raw===null;$('save-status').textContent='Автосохранение приостановлено · скачайте копию перед закрытием';}
 function load(){
   let raw;
   try{raw=localStorage.getItem(STORAGE_KEY);lastStored=raw;}catch(error){storageProblem('Хранилище браузера недоступно. Можно заполнять форму, но ответы останутся только в открытой вкладке. Скачайте JSON перед закрытием.');return;}
-  if(raw!==null){try{answers=parsePacket(raw);}catch(error){storageProblem('Сохранённая копия повреждена или имеет неизвестный формат. Она не изменена. Скачайте исходные данные для восстановления; автосохранение заблокировано до явной замены.',raw);return;}}
+  if(raw!==null){
+    try{const {clean,changed}=parsePacket(raw);answers=clean;if(changed)notify('Часть сохранённых ответов не совпала с текущей формой и сброшена; всё остальное на месте.');}
+    catch(error){storageProblem('Сохранённая копия повреждена или имеет неизвестный формат. Она не изменена. Скачайте исходные данные для восстановления; автосохранение заблокировано до явной замены.',raw);return;}
+  }
   $('save-status').textContent=raw===null?'Ответов пока нет · автосохранение в этом браузере':'Сохранённая копия восстановлена из этого браузера';
 }
 function save(){
@@ -213,10 +235,10 @@ $('import-file').addEventListener('change',async event=>{
   $('import-json').disabled=true;
   try{
     if(file.size>MAX_FILE_BYTES)throw new Error('Файл больше 2 МБ.');
-    const incoming=parsePacket(await file.text());
+    const {clean:incoming,changed}=parsePacket(await file.text());
     if(hasAnswers() && !window.confirm('Заменить все текущие ответы и заметки содержимым копии? Сначала скачайте текущую копию, если хотите её сохранить.')){notify('Загрузка отменена. Текущие ответы не изменены.');return;}
     answers=incoming;updateView();
-    const saved=save();notify(saved?'Копия загружена и сохранена в этом браузере.':'Копия загружена только в эту вкладку. Автосохранение недоступно — скачайте JSON перед закрытием.');
+    const saved=save();notify((changed?'Часть строк в копии не совпала с текущей формой и сброшена. ':'')+(saved?'Копия загружена и сохранена в этом браузере.':'Копия загружена только в эту вкладку. Автосохранение недоступно — скачайте JSON перед закрытием.'));
   }catch(error){notify('Копия не загружена. Текущие ответы не изменены. Проверьте формат JSON, версию 1, полный набор строк и ограничение заметки в 2 000 символов (файл до 2 МБ).');}
   finally{event.target.value='';$('import-json').disabled=false;}
 });
